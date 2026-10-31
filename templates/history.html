@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}History — Interview.ai{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/history.css') }}">{% endblock %}
+
+{% block content %}
+<main class="history-product-page" aria-labelledby="historyTitle">
+  <header class="product-page-heading" data-reveal>
+    <div>
+      <span class="product-kicker"><i class="bi bi-clock-history"></i> Preparation archive</span>
+      <h1 id="historyTitle">Your growth, in motion.</h1>
+      <p>Every attempt becomes a signal. Search your timeline, revisit reports, and see how your preparation compounds.</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('resume_analyzer') }}" class="product-primary-action compact" style="background: linear-gradient(120deg, #7c3aed, #06b6d4);">
+        <i class="bi bi-file-earmark-arrow-up"></i><span>Analyze Resume<small>Upload &amp; get ATS score</small></span><i class="bi bi-arrow-up-right"></i>
+      </a>
+      <a href="{{ url_for('interview_assessment') }}" class="product-primary-action compact">
+        <i class="bi bi-plus-lg"></i><span>New assessment<small>Start a focused session</small></span><i class="bi bi-arrow-up-right"></i>
+      </a>
+    </div>
+  </header>
+
+  <section class="history-control-deck" aria-label="History filters" data-reveal>
+    <div class="control-deck-intro"><i class="bi bi-sliders2"></i><div><b>Find a session</b><small>Filter your verified preparation history</small></div></div>
+    <form method="GET" action="{{ url_for('history') }}" class="history-smart-filter">
+      <input type="hidden" name="tab" value="{{ filters.tab or 'all' }}">
+      <label class="history-search"><i class="bi bi-search"></i><span class="visually-hidden">Search</span><input type="search" id="search" name="search" placeholder="Search domain or role…" value="{{ filters.search }}"></label>
+      <label><span class="visually-hidden">Domain</span><select id="domain" name="domain"><option value="">All domains</option>{% for domain in domains %}<option value="{{ domain }}" {% if filters.domain == domain %}selected{% endif %}>{{ domain }}</option>{% endfor %}</select></label>
+      <label><span class="visually-hidden">Difficulty</span><select id="difficulty" name="difficulty"><option value="">All levels</option><option value="Easy" {% if filters.difficulty == 'Easy' %}selected{% endif %}>Easy</option><option value="Medium" {% if filters.difficulty == 'Medium' %}selected{% endif %}>Medium</option><option value="Hard" {% if filters.difficulty == 'Hard' %}selected{% endif %}>Hard</option></select></label>
+      <button type="submit"><i class="bi bi-funnel"></i> Apply</button>
+      {% if filters.search or filters.domain or filters.difficulty %}<a href="{{ url_for('history') }}" aria-label="Clear filters"><i class="bi bi-x-lg"></i></a>{% endif %}
+    </form>
+  </section>
+
+  <!-- Filter Category Tabs -->
+  <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+    <a href="{{ url_for('history', tab='all', search=filters.search) }}" class="btn btn-sm {% if not filters.tab or filters.tab == 'all' %}btn-primary{% else %}btn-glass{% endif %} rounded-pill px-3 py-1.5 fw-bold" style="font-size: 0.8rem;">
+      <i class="bi bi-grid-fill me-1"></i> All Records ({{ sessions|length + resume_analyses|length + (coding_assessments|length if coding_assessments else 0) }})
+    </a>
+    <a href="{{ url_for('history', tab='resumes', search=filters.search) }}" class="btn btn-sm {% if filters.tab == 'resumes' %}btn-primary{% else %}btn-glass{% endif %} rounded-pill px-3 py-1.5 fw-bold" style="font-size: 0.8rem;">
+      <i class="bi bi-file-earmark-text me-1"></i> Resume Analyses ({{ resume_analyses|length }})
+    </a>
+    <a href="{{ url_for('history', tab='interviews', search=filters.search) }}" class="btn btn-sm {% if filters.tab == 'interviews' %}btn-primary{% else %}btn-glass{% endif %} rounded-pill px-3 py-1.5 fw-bold" style="font-size: 0.8rem;">
+      <i class="bi bi-award me-1"></i> Aptitude Assessments ({{ sessions|length }})
+    </a>
+    <a href="{{ url_for('history', tab='coding', search=filters.search) }}" class="btn btn-sm {% if filters.tab == 'coding' %}btn-primary{% else %}btn-glass{% endif %} rounded-pill px-3 py-1.5 fw-bold" style="font-size: 0.8rem;">
+      <i class="bi bi-code-slash me-1"></i> Coding Rounds ({{ coding_assessments|length if coding_assessments else 0 }})
+    </a>
+  </div>
+
+  <section class="history-stream" aria-labelledby="historyStreamTitle">
+    
+    <!-- RESUME ANALYSES SECTION -->
+    {% if filters.tab in ['all', 'resumes'] and resume_analyses %}
+    <div class="product-section-heading mt-2">
+      <div><span>RESUME INTELLIGENCE</span><h2>Resume Analyses</h2></div>
+      <small>{{ resume_analyses|length }} analysis record{{ '' if resume_analyses|length == 1 else 's' }}</small>
+    </div>
+    <div class="history-card-stream mb-4">
+      {% for item in resume_analyses %}
+      {% set rec = item.record %}
+      {% set norm = item.norm %}
+      {% set score = (norm.ats_score or rec.ats_score or 0) | int %}
+      <article class="history-session-card" data-reveal data-tilt style="border-left: 4px solid #7c3aed;">
+        <div class="history-time-rail">
+          <span>{{ rec.created_at.strftime('%d') }}</span>
+          <small>{{ rec.created_at.strftime('%b') }}</small>
+          <i></i>
+        </div>
+        <div class="history-session-main">
+          <div class="history-session-title">
+            <span class="history-domain-mark" style="background: linear-gradient(135deg, rgba(124,58,237,0.15), rgba(6,182,212,0.1)); color: #7c3aed;">
+              <i class="bi bi-file-earmark-pdf"></i>
+            </span>
+            <div>
+              <h3>{{ rec.job_role or 'General Role' }}</h3>
+              <p><i class="bi bi-file-earmark me-1"></i>{{ rec.filename or 'resume.pdf' }} &middot; {{ rec.created_at.strftime('%I:%M %p') }}</p>
+            </div>
+          </div>
+          <div class="history-session-signals">
+            <span class="history-difficulty" style="background: rgba(124, 58, 237, 0.1); color: #7c3aed;">Resume</span>
+            <span class="history-outcome {% if score >= 80 %}excellent{% elif score >= 60 %}passed{% else %}review{% endif %}">
+              <i class="bi {% if score >= 80 %}bi-stars{% elif score >= 60 %}bi-check2{% else %}bi-arrow-repeat{% endif %}"></i>
+              {% if score >= 80 %}Excellent Match{% elif score >= 60 %}Good Match{% else %}Needs Work{% endif %}
+            </span>
+          </div>
+        </div>
+        <div class="history-score-orbit" style="--score: {{ score }};">
+          <div><strong>{{ score }}%</strong><small>ATS</small></div>
+        </div>
+        <div class="history-card-actions">
+          <a href="{{ url_for('resume_analysis_detail', item_id=rec.id) }}"><span>View report</span><i class="bi bi-arrow-up-right"></i></a>
+          <form action="{{ url_for('delete_resume_history', item_id=rec.id) }}" method="POST" onsubmit="return confirm('Delete this resume analysis record? This action cannot be undone.');">
+            <button type="submit" aria-label="Delete analysis"><i class="bi bi-trash3"></i></button>
+          </form>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- INTERVIEW SESSIONS SECTION -->
+    {% if filters.tab in ['all', 'interviews'] %}
+    <div class="product-section-heading mt-2">
+      <div><span>SESSION TIMELINE</span><h2 id="historyStreamTitle">Aptitude Assessments</h2></div>
+      <small>{{ sessions|length }} result{{ '' if sessions|length == 1 else 's' }}</small>
+    </div>
+    {% if sessions %}
+      <div class="history-card-stream">
+        {% for session in sessions %}
+        <article class="history-session-card" data-reveal data-tilt>
+          <div class="history-time-rail"><span>{{ session.end_time.strftime('%d') }}</span><small>{{ session.end_time.strftime('%b') }}</small><i></i></div>
+          <div class="history-session-main">
+            <div class="history-session-title"><span class="history-domain-mark"><i class="bi bi-code-square"></i></span><div><h3>{{ session.domain }}</h3><p>{{ session.end_time.strftime('%I:%M %p') }} · {{ session.time_taken_seconds // 60 }}m {{ session.time_taken_seconds % 60 }}s</p></div></div>
+            <div class="history-session-signals">
+              <span class="history-difficulty {{ session.difficulty|lower }}">{{ session.difficulty }}</span>
+              <span class="history-outcome {{ 'excellent' if session.score >= 80 else 'passed' if session.score >= 60 else 'review' }}"><i class="bi {{ 'bi-stars' if session.score >= 80 else 'bi-check2' if session.score >= 60 else 'bi-arrow-repeat' }}"></i>{{ 'Excellent' if session.score >= 80 else 'Passed' if session.score >= 60 else 'Review' }}</span>
+            </div>
+          </div>
+          <div class="history-score-orbit" style="--score:{{ session.score }}"><div><strong>{{ session.score }}</strong><small>SCORE</small></div></div>
+          <div class="history-card-actions">
+            <a href="{{ url_for('view_mcq_report', session_id=session.id) }}"><span>Open report</span><i class="bi bi-arrow-up-right"></i></a>
+            <form action="{{ url_for('delete_history', session_id=session.id) }}" method="POST" onsubmit="return confirm('Delete this session? This action cannot be undone.');"><button type="submit" aria-label="Delete {{ session.domain }} session"><i class="bi bi-trash3"></i></button></form>
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+    {% elif filters.tab == 'interviews' and not sessions %}
+      <div class="product-empty-state history-empty-product"><span><i class="bi bi-award"></i></span><h3>No aptitude assessments found</h3><p>Your current filters did not find a match. Adjust them or begin a new assessment.</p><a href="{{ url_for('interview_assessment') }}">Start an assessment <i class="bi bi-arrow-right"></i></a></div>
+    {% endif %}
+    {% endif %}
+
+    <!-- CODING ROUNDS SECTION -->
+    {% if filters.tab in ['all', 'coding'] and coding_assessments %}
+    <div class="product-section-heading mt-3">
+      <div><span>CODING EVALUATION</span><h2>Coding Rounds</h2></div>
+      <small>{{ coding_assessments|length }} assessment{{ '' if coding_assessments|length == 1 else 's' }}</small>
+    </div>
+    <div class="history-card-stream mb-4">
+      {% for c in coding_assessments %}
+      {% set cscore = (c.overall_score or 0) | round | int %}
+      <article class="history-session-card" data-reveal data-tilt style="border-left: 4px solid #06b6d4;">
+        <div class="history-time-rail">
+          <span>{{ c.submitted_at.strftime('%d') }}</span>
+          <small>{{ c.submitted_at.strftime('%b') }}</small>
+          <i></i>
+        </div>
+        <div class="history-session-main">
+          <div class="history-session-title">
+            <span class="history-domain-mark" style="background: linear-gradient(135deg, rgba(6,182,212,0.15), rgba(79,70,229,0.1)); color: #0891b2;">
+              <i class="bi bi-code-slash"></i>
+            </span>
+            <div>
+              <h3>{{ c.domain }} &middot; {{ c.role }}</h3>
+              <p><i class="bi bi-calendar3 me-1"></i>{{ c.submitted_at.strftime('%I:%M %p') }} &middot; {{ c.questions_solved }} / {{ c.total_questions }} solved &middot; {{ c.language }}</p>
+            </div>
+          </div>
+          <div class="history-session-signals">
+            <span class="history-difficulty {{ c.difficulty|lower }}">{{ c.difficulty }}</span>
+            <span class="history-outcome {% if cscore >= 70 %}excellent{% elif cscore >= 50 %}passed{% else %}review{% endif %}">
+              <i class="bi {% if cscore >= 70 %}bi-stars{% elif cscore >= 50 %}bi-check2{% else %}bi-arrow-repeat{% endif %}"></i>
+              {% if cscore >= 70 %}Excellent{% elif cscore >= 50 %}Passed{% else %}Review{% endif %}
+            </span>
+          </div>
+        </div>
+        <div class="history-score-orbit" style="--score: {{ cscore }};">
+          <div><strong>{{ cscore }}%</strong><small>CODE</small></div>
+        </div>
+        <div class="history-card-actions">
+          <a href="{{ url_for('coding_report', assessment_id=c.id) }}"><span>Open report</span><i class="bi bi-arrow-up-right"></i></a>
+          <form action="{{ url_for('delete_coding_history', item_id=c.id) }}" method="POST" onsubmit="return confirm('Delete this coding assessment record? This action cannot be undone.');">
+            <button type="submit" aria-label="Delete coding session"><i class="bi bi-trash3"></i></button>
+          </form>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    {% elif filters.tab == 'coding' and not coding_assessments %}
+      <div class="product-empty-state history-empty-product"><span><i class="bi bi-code-slash"></i></span><h3>No coding assessments found</h3><p>You haven't completed any coding challenges matching your search.</p><a href="{{ url_for('coding_setup') }}">Start coding round <i class="bi bi-arrow-right"></i></a></div>
+    {% endif %}
+
+    <!-- GLOBAL EMPTY STATE -->
+    {% if not sessions and not resume_analyses and not coding_assessments %}
+      <div class="product-empty-state history-empty-product">
+        <span><i class="bi bi-clock-history"></i></span>
+        <h3>No history records found</h3>
+        <p>You haven't completed any assessments or resume analyses yet.</p>
+        <div class="d-flex gap-2 justify-content-center mt-3">
+          <a href="{{ url_for('resume_analyzer') }}" class="btn btn-primary btn-sm rounded-pill px-3">Analyze Resume</a>
+          <a href="{{ url_for('interview_assessment') }}" class="btn btn-glass btn-sm rounded-pill px-3">Start Assessment</a>
+          <a href="{{ url_for('coding_setup') }}" class="btn btn-glass btn-sm rounded-pill px-3">Coding Round</a>
+        </div>
+      </div>
+    {% endif %}
+
+  </section>
+</main>
+{% endblock %}

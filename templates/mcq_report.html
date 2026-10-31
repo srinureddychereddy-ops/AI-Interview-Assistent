@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block title %}Aptitude Assessment Report — {{ session.domain }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/interview.css') }}">
+<style>
+/* MCQ Report styles */
+.report-score {
+    font-size: 3rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    color: var(--text-primary);
+    line-height: 1;
+    margin-bottom: 8px;
+}
+.report-score-total {
+    font-size: 1.25rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+.report-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+}
+.summary-list-report {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.summary-list-report li {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.875rem;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-base);
+}
+.summary-list-report li:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+.summary-list-report span {
+    color: var(--text-muted);
+}
+.summary-list-report strong {
+    color: var(--text-primary);
+}
+.style-correct-box { background: rgba(16, 185, 129, 0.08) !important; }
+.style-incorrect-box { background: rgba(239, 68, 68, 0.08) !important; }
+.style-skipped-box { background: rgba(245, 158, 11, 0.08) !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid fade-in py-2 mcq-report-page">
+    
+    <!-- Header Summary Block -->
+    <div class="report-header card-glass mb-4 shadow-sm">
+        <div class="row align-items-center">
+            <div class="col-lg-4 text-center text-lg-start">
+                <h1 class="report-score">{{ session.score }}<span class="report-score-total">/100</span></h1>
+                <span class="badge rounded-pill fs-6 px-3 py-2 {{ badge.class }}">{{ badge.text }}</span>
+            </div>
+            <div class="col-lg-8 text-center text-lg-end mt-4 mt-lg-0">
+                <p class="report-title mb-1">MCQ Assessment Report</p>
+                <p class="text-muted small mb-4">{{ session.domain }} ({{ session.difficulty }})</p>
+                <div class="d-flex justify-content-center justify-content-lg-end gap-2">
+                    <button class="btn btn-glass" onclick="window.print()"><i class="bi bi-printer me-2"></i>Print Report</button>
+                    <a href="{{ url_for('interview_setup', domain=session.domain, difficulty=session.difficulty) }}" class="btn btn-glass"><i class="bi bi-arrow-clockwise me-2"></i>Retake Interview</a>
+                    <a href="{{ url_for('interview_assessment') }}" class="btn btn-primary"><i class="bi bi-box-arrow-left me-2"></i>Exit</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Left Column: Summary & Topic Analysis -->
+        <div class="col-lg-4">
+            <div class="d-flex flex-column gap-4">
+                <!-- Interview Summary -->
+                <div class="card-glass shadow-sm">
+                    <h5 class="card-heading mb-4">Interview Summary</h5>
+                    <ul class="summary-list-report">
+                        <li><span>Domain</span><strong>{{ session.domain }}</strong></li>
+                        <li><span>Difficulty</span><strong>{{ session.difficulty }}</strong></li>
+                        <li><span>Total Questions</span><strong>{{ session.total_questions }}</strong></li>
+                        <li><span>Correct Answers</span><strong class="text-success">{{ session.correct_answers }}</strong></li>
+                        <li><span>Wrong Answers</span><strong class="text-danger">{{ session.wrong_answers }}</strong></li>
+                        <li><span>Accuracy</span><strong>{{ session.score }}%</strong></li>
+                        <li><span>Time Taken</span><strong>{{ '%02d:%02d' % (session.time_taken_seconds // 60, session.time_taken_seconds % 60) }} min</strong></li>
+                    </ul>
+                </div>
+
+                <!-- Topic Analysis -->
+                <div class="card-glass shadow-sm">
+                    <h5 class="card-heading mb-4">Topic Analysis</h5>
+                    <div class="d-flex flex-column gap-3">
+                        {% for topic, score in topic_analysis.items() %}
+                        <div>
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span class="text-muted">{{ topic }}</span>
+                                <span class="text-main fw-semibold">{{ score }}%</span>
+                            </div>
+                            <div class="progress" style="height: 6px; background:var(--border-base);">
+                                <div class="progress-bar bg-primary" role="progressbar" style="width: {{ score }}%"></div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Detailed Question Review -->
+        <div class="col-lg-8">
+            <div class="d-flex flex-column gap-3">
+                {% set attempt_list = attempts if attempts is defined else session.attempts %}
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <h5 class="card-heading mb-0 text-main fs-6 fw-bold">Detailed Question Review</h5>
+                    <span class="text-muted small font-monospace" style="font-size: 0.75rem;">Showing {{ attempt_list | length }} Questions</span>
+                </div>
+
+                {% for attempt in attempt_list %}
+                <div class="card-glass p-4 shadow-sm position-relative">
+                    
+                    <!-- Top Metadata Bar -->
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 pb-3 border-bottom" style="border-color:var(--border-base) !important;">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-20 px-2.5 py-1 font-monospace" style="font-size: 0.75rem;">
+                                Question {{ loop.index }}
+                            </span>
+                            <span class="badge bg-secondary bg-opacity-10 text-muted border border-secondary border-opacity-20 px-2.5 py-1" style="font-size: 0.75rem;">
+                                <i class="bi bi-tag-fill me-1 text-muted"></i>{{ session.domain }}
+                            </span>
+                            <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-20 px-2.5 py-1" style="font-size: 0.75rem;">
+                                {{ session.difficulty }}
+                            </span>
+                        </div>
+
+                        <!-- Status Badge -->
+                        <div>
+                            {% if not attempt.user_answer %}
+                                <span class="badge bg-warning bg-opacity-15 text-warning border border-warning border-opacity-25 rounded-pill px-3 py-1.5 font-monospace" style="font-size: 0.75rem;">
+                                    <i class="bi bi-dash-circle-fill me-1"></i>Skipped
+                                </span>
+                            {% elif attempt.is_correct %}
+                                <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25 rounded-pill px-3 py-1.5 font-monospace" style="font-size: 0.75rem;">
+                                    <i class="bi bi-check-circle-fill me-1"></i>Correct
+                                </span>
+                            {% else %}
+                                <span class="badge bg-danger bg-opacity-15 text-danger border border-danger border-opacity-25 rounded-pill px-3 py-1.5 font-monospace" style="font-size: 0.75rem;">
+                                    <i class="bi bi-x-circle-fill me-1"></i>Incorrect
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Question Text -->
+                    <h5 class="text-main fw-bold mb-4 lh-base" style="font-size: 1.05rem;">
+                        {{ attempt.question_text }}
+                    </h5>
+
+                    <!-- Answer Cards Grid -->
+                    <div class="row g-3 mb-3">
+                        {% if attempt.is_correct %}
+                            <!-- CORRECT ANSWER -->
+                            <div class="col-12">
+                                <div class="p-3 rounded-3 border border-success border-opacity-30 style-correct-box">
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <span class="small fw-bold text-muted text-uppercase font-monospace" style="font-size: 0.72rem; letter-spacing: 0.05em;">Your Answer</span>
+                                        <span class="text-success small fw-bold" style="font-size: 0.75rem;"><i class="bi bi-check-lg me-1"></i>Correct</span>
+                                    </div>
+                                    <p class="mb-0 fw-bold fs-6 text-success">
+                                        {{ attempt.user_answer }}
+                                    </p>
+                                </div>
+                            </div>
+                        {% else %}
+                            <!-- INCORRECT OR SKIPPED ANSWER -->
+                            <div class="col-md-6">
+                                <div class="p-3 rounded-3 border {% if not attempt.user_answer %}border-warning border-opacity-30 style-skipped-box{% else %}border-danger border-opacity-30 style-incorrect-box{% endif %}">
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <span class="small fw-bold text-muted text-uppercase font-monospace" style="font-size: 0.72rem; letter-spacing: 0.05em;">Your Answer</span>
+                                        {% if not attempt.user_answer %}
+                                            <span class="text-warning small fw-bold" style="font-size: 0.75rem;"><i class="bi bi-exclamation-triangle-fill me-1"></i>Skipped</span>
+                                        {% else %}
+                                            <span class="text-danger small fw-bold" style="font-size: 0.75rem;"><i class="bi bi-x-lg me-1"></i>Incorrect</span>
+                                        {% endif %}
+                                    </div>
+                                    <p class="mb-0 fw-bold fs-6 {% if not attempt.user_answer %}text-warning{% else %}text-danger{% endif %}">
+                                        {% if attempt.user_answer %}
+                                            {{ attempt.user_answer }}
+                                        {% else %}
+                                            No Answer Selected
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Correct Answer Card -->
+                            <div class="col-md-6">
+                                <div class="p-3 rounded-3 border border-success border-opacity-30 style-correct-box">
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <span class="small fw-bold text-muted text-uppercase font-monospace" style="font-size: 0.72rem; letter-spacing: 0.05em;">Correct Answer</span>
+                                        <span class="text-success small fw-bold" style="font-size: 0.75rem;"><i class="bi bi-check-circle-fill me-1"></i>Verified</span>
+                                    </div>
+                                    <p class="mb-0 fw-bold fs-6 text-success">
+                                        {{ attempt.correct_option }}
+                                    </p>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Explanation Module -->
+                    {% if attempt.explanation %}
+                    <div class="p-3 rounded-3 border" style="background: var(--bg-app); border-color: var(--border-base) !important;">
+                        <h6 class="text-primary small fw-bold mb-1.5 d-flex align-items-center gap-1.5">
+                            <i class="bi bi-lightbulb-fill text-warning"></i>Explanation & Concept Review
+                        </h6>
+                        <p class="text-muted small mb-0 lh-lg" style="font-size: 0.85rem;">{{ attempt.explanation }}</p>
+                    </div>
+                    {% endif %}
+
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,633 @@
+{% extends "base.html" %}
+
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">{% endblock %}
+
+{% block content %}
+<!-- ═══════════════════════════════════════════════
+     NAVBAR
+     ═══════════════════════════════════════════════ -->
+<header class="landing-header" id="top">
+  <nav class="navbar navbar-expand-lg landing-navbar" id="landingNav" aria-label="Primary navigation">
+    <div class="container landing-nav-inner">
+
+      <a class="landing-brand" href="#top" aria-label="Interview.ai home">
+        <span class="landing-brand-mark" aria-hidden="true"><i class="bi bi-cpu-fill"></i></span>
+        <span>Interview<span class="brand-dot">.ai</span></span>
+      </a>
+
+      <button class="navbar-toggler landing-menu-toggle" type="button"
+              data-bs-toggle="collapse" data-bs-target="#landingMenu"
+              aria-controls="landingMenu" aria-expanded="false" aria-label="Open navigation menu">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="landingMenu">
+        <ul class="navbar-nav landing-nav-links mx-auto">
+          <li class="nav-item"><a class="nav-link" href="#features">Features</a></li>
+          <li class="nav-item"><a class="nav-link" href="#how-it-works">How It Works</a></li>
+          <li class="nav-item"><a class="nav-link" href="#why-us">Why Interview.ai</a></li>
+          <li class="nav-item"><a class="nav-link" href="#leaderboard">Leaderboard</a></li>
+          <li class="nav-item"><a class="nav-link" href="#faq">FAQ</a></li>
+        </ul>
+        <div class="landing-nav-actions">
+          {% if current_user.is_authenticated %}
+            <a href="{{ url_for('dashboard') }}" class="landing-btn landing-btn-primary landing-btn-sm">
+              Dashboard <i class="bi bi-arrow-up-right"></i>
+            </a>
+          {% else %}
+            <a href="{{ url_for('login') }}" class="landing-btn landing-btn-ghost landing-btn-sm">Log in</a>
+            <a href="{{ url_for('register') }}" class="landing-btn landing-btn-primary landing-btn-sm">
+              Get Started <i class="bi bi-arrow-right"></i>
+            </a>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+  </nav>
+</header>
+
+<!-- ═══════════════════════════════════════════════
+     MAIN LANDING PAGE
+     ═══════════════════════════════════════════════ -->
+<main class="landing-page">
+
+  <!-- ─── HERO ─── -->
+  <section class="hero-section" aria-labelledby="hero-title">
+    <div class="hero-glow hero-glow-1" aria-hidden="true"></div>
+    <div class="hero-glow hero-glow-2" aria-hidden="true"></div>
+    <div class="hero-grid-bg" aria-hidden="true"></div>
+
+    <div class="container hero-container">
+      <div class="row align-items-center g-5">
+
+        <!-- Left: Copy -->
+        <div class="col-lg-6 hero-copy">
+          <div class="hero-badge reveal">
+            <span class="hero-badge-dot" aria-hidden="true"></span>
+            AI-POWERED INTERVIEW PLATFORM
+          </div>
+
+          <h1 id="hero-title" class="hero-title reveal">
+            Practice Smarter.<br>
+            <span>Get Interview-Ready with AI.</span>
+          </h1>
+
+          <p class="hero-subtitle reveal">
+            Analyze your resume, master domain-specific aptitude, solve real coding challenges,
+            and track your performance — all in one intelligent career platform.
+          </p>
+
+          <div class="hero-actions reveal">
+            <a href="{{ url_for('register') }}" class="landing-btn landing-btn-primary landing-btn-lg">
+              Start Your Interview <i class="bi bi-arrow-right"></i>
+            </a>
+            <a href="#features" class="landing-btn landing-btn-secondary landing-btn-lg">
+              Explore Platform
+            </a>
+          </div>
+
+          <div class="hero-trust-pills reveal" aria-label="Platform highlights">
+            <span><i class="bi bi-shield-check"></i> No credit card required</span>
+            <span><i class="bi bi-cpu"></i> Personalized by AI</span>
+            <span><i class="bi bi-lightning-charge"></i> Instant feedback</span>
+          </div>
+        </div>
+
+        <!-- Right: AI Visual -->
+        <div class="col-lg-6 reveal">
+          <div class="hero-visual-wrap" aria-label="Interview.ai dashboard preview">
+            <div class="hero-visual-glow" aria-hidden="true"></div>
+
+            <div class="hero-visual">
+              <!-- Top bar -->
+              <div class="preview-topbar">
+                <div class="preview-brand">
+                  <span class="preview-logo"><i class="bi bi-cpu-fill"></i></span>
+                  <span>Candidate Overview</span>
+                </div>
+                <span class="preview-live"><span></span> AI Active</span>
+              </div>
+
+              <!-- KPI Cards -->
+              <div class="preview-kpi-grid">
+                <div class="preview-kpi">
+                  <span class="preview-kpi-label">ATS Score</span>
+                  <span class="preview-kpi-value">93<small style="font-size:.55em;color:var(--lp-muted)">/100</small></span>
+                  <span class="preview-kpi-status"><i class="bi bi-check2"></i> Excellent</span>
+                </div>
+                <div class="preview-kpi">
+                  <span class="preview-kpi-label">Aptitude</span>
+                  <span class="preview-kpi-value">89%</span>
+                  <span class="preview-kpi-status"><i class="bi bi-arrow-up"></i> +12%</span>
+                </div>
+                <div class="preview-kpi">
+                  <span class="preview-kpi-label">Coding</span>
+                  <span class="preview-kpi-value">98%</span>
+                  <span class="preview-kpi-status"><i class="bi bi-check2"></i> Passed</span>
+                </div>
+              </div>
+
+              <!-- AI Suggestion -->
+              <div class="preview-suggestion">
+                <div class="suggestion-icon"><i class="bi bi-stars"></i></div>
+                <div>
+                  <div class="suggestion-label">AI Suggestion</div>
+                  <p>Practice two medium-level array problems and strengthen your system design answers.</p>
+                </div>
+                <span class="suggestion-arrow"><i class="bi bi-arrow-up-right"></i></span>
+              </div>
+            </div>
+
+            <!-- Floating Cards -->
+            <div class="hero-float-card hero-float-card-1" aria-hidden="true">
+              <i class="bi bi-file-earmark-check"></i>
+              <div>
+                <span>Resume Analysis</span>
+                <strong>ATS Score: 93%</strong>
+              </div>
+            </div>
+            <div class="hero-float-card hero-float-card-2" aria-hidden="true">
+              <i class="bi bi-code-slash"></i>
+              <div>
+                <span>Coding Assessment</span>
+                <strong>98% ✓ Completed</strong>
+              </div>
+            </div>
+            <div class="hero-float-card hero-float-card-3" aria-hidden="true">
+              <i class="bi bi-graph-up-arrow"></i>
+              <div>
+                <span>Overall Readiness</span>
+                <strong>Score +12%</strong>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── TRUST STRIP ─── -->
+  <section class="trust-section" aria-label="Platform capabilities">
+    <div class="container">
+      <div class="trust-grid">
+        <div class="trust-item reveal">
+          <div class="trust-icon"><i class="bi bi-cpu"></i></div>
+          <div>
+            <strong>AI-Powered</strong>
+            <span>Resume Analysis</span>
+          </div>
+        </div>
+        <div class="trust-item reveal">
+          <div class="trust-icon"><i class="bi bi-bullseye"></i></div>
+          <div>
+            <strong>Domain-Specific</strong>
+            <span>Assessments</span>
+          </div>
+        </div>
+        <div class="trust-item reveal">
+          <div class="trust-icon"><i class="bi bi-code-square"></i></div>
+          <div>
+            <strong>Real Coding</strong>
+            <span>Evaluation</span>
+          </div>
+        </div>
+        <div class="trust-item reveal">
+          <div class="trust-icon"><i class="bi bi-graph-up-arrow"></i></div>
+          <div>
+            <strong>Instant</strong>
+            <span>Performance Reports</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── FEATURES ─── -->
+  <section class="landing-section features-section" id="features" aria-labelledby="features-title">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-label">One intelligent platform</span>
+        <h2 id="features-title">Everything You Need to Prepare Smarter</h2>
+        <p>One platform for every stage of your technical interview journey.</p>
+      </div>
+
+      <div class="features-grid">
+        <article class="feature-card reveal">
+          <span class="feature-number">01</span>
+          <div class="feature-icon feature-icon-blue"><i class="bi bi-file-earmark-check"></i></div>
+          <h3>Resume Analyzer</h3>
+          <p>Analyze your resume against a target role and identify strengths, gaps, and ATS improvements powered by AI.</p>
+        </article>
+
+        <article class="feature-card reveal">
+          <span class="feature-number">02</span>
+          <div class="feature-icon feature-icon-purple"><i class="bi bi-award"></i></div>
+          <h3>Aptitude Round</h3>
+          <p>Practice domain-specific aptitude questions tailored to your target role and measure your interview readiness.</p>
+        </article>
+
+        <article class="feature-card reveal">
+          <span class="feature-number">03</span>
+          <div class="feature-icon feature-icon-cyan"><i class="bi bi-code-square"></i></div>
+          <h3>Coding Round</h3>
+          <p>Solve real coding challenges with automated execution, test case evaluation, and detailed performance analysis.</p>
+        </article>
+
+        <article class="feature-card reveal">
+          <span class="feature-number">04</span>
+          <div class="feature-icon feature-icon-violet"><i class="bi bi-compass"></i></div>
+          <h3>AI Interview Journey</h3>
+          <p>Progress through a structured interview journey and earn a verified completion certificate for your target domain.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── HOW IT WORKS / JOURNEY ─── -->
+  <section class="landing-section journey-section" id="how-it-works" aria-labelledby="journey-title">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-label">Simple by design</span>
+        <h2 id="journey-title">Your Interview Journey</h2>
+        <p>From domain selection to certification — a clear, guided path to interview readiness.</p>
+      </div>
+
+      <div class="journey-track" id="journeyTrack">
+        <article class="journey-step reveal">
+          <div class="journey-step-num">01</div>
+          <i class="bi bi-compass journey-step-icon" aria-hidden="true"></i>
+          <h3>Choose Your Domain</h3>
+          <p>Select your target technical domain and difficulty level.</p>
+        </article>
+        <article class="journey-step reveal">
+          <div class="journey-step-num">02</div>
+          <i class="bi bi-file-earmark-arrow-up journey-step-icon" aria-hidden="true"></i>
+          <h3>Analyze Your Resume</h3>
+          <p>Upload your resume and get AI-powered ATS analysis and recommendations.</p>
+        </article>
+        <article class="journey-step reveal">
+          <div class="journey-step-num">03</div>
+          <i class="bi bi-lightning-charge journey-step-icon" aria-hidden="true"></i>
+          <h3>Complete Aptitude</h3>
+          <p>Answer domain-specific questions to demonstrate technical knowledge.</p>
+        </article>
+        <article class="journey-step reveal">
+          <div class="journey-step-num">04</div>
+          <i class="bi bi-code-slash journey-step-icon" aria-hidden="true"></i>
+          <h3>Solve Coding Challenges</h3>
+          <p>Write and execute code against real test cases in a live editor.</p>
+        </article>
+        <article class="journey-step reveal">
+          <div class="journey-step-num">05</div>
+          <i class="bi bi-patch-check journey-step-icon" aria-hidden="true"></i>
+          <h3>Earn Your Certificate</h3>
+          <p>Receive a verified certificate of completion for your domain.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── AI ENGINE VISUAL ─── -->
+  <section class="landing-section engine-section" aria-label="Interview.ai AI Engine architecture">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-label">Powered by AI</span>
+        <h2>The Interview.ai Engine</h2>
+        <p>One intelligent engine driving every stage of your preparation.</p>
+      </div>
+
+      <div class="engine-diagram reveal" id="engineDiagram">
+        <!-- Top: Brand -->
+        <div class="engine-brand-label">Interview.ai</div>
+        <div class="engine-connector" aria-hidden="true"></div>
+
+        <!-- Core -->
+        <div class="engine-core">
+          <i class="bi bi-cpu-fill" aria-hidden="true"></i>
+          <span>AI Engine</span>
+        </div>
+        <div class="engine-connector" aria-hidden="true"></div>
+
+        <!-- Horizontal Connector Bar -->
+        <div class="engine-hbar" aria-hidden="true"></div>
+
+        <!-- Branches -->
+        <div class="engine-branches">
+          <div class="engine-branch">
+            <div class="engine-branch-line" aria-hidden="true"></div>
+            <div class="engine-branch-node">
+              <i class="bi bi-file-earmark-check" aria-hidden="true"></i>
+              <span>Resume AI</span>
+            </div>
+          </div>
+          <div class="engine-branch">
+            <div class="engine-branch-line" aria-hidden="true"></div>
+            <div class="engine-branch-node">
+              <i class="bi bi-award" aria-hidden="true"></i>
+              <span>Aptitude AI</span>
+            </div>
+          </div>
+          <div class="engine-branch">
+            <div class="engine-branch-line" aria-hidden="true"></div>
+            <div class="engine-branch-node">
+              <i class="bi bi-code-slash" aria-hidden="true"></i>
+              <span>Coding AI</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Connector Bar -->
+        <div class="engine-hbar" aria-hidden="true"></div>
+        <div class="engine-connector" aria-hidden="true"></div>
+
+        <!-- Output -->
+        <div class="engine-output">
+          <i class="bi bi-graph-up-arrow" aria-hidden="true"></i>
+          <span>Performance Insights</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── WHY INTERVIEW.AI ─── -->
+  <section class="landing-section why-section" id="why-us" aria-labelledby="why-title">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-label">A smarter advantage</span>
+        <h2 id="why-title">Why Interview.ai</h2>
+        <p>Purpose-built tools that adapt to your goals and accelerate your readiness.</p>
+      </div>
+
+      <div class="why-grid">
+        <article class="why-card reveal">
+          <div class="why-card-icon why-card-icon-1"><i class="bi bi-stars"></i></div>
+          <h3>AI-Powered Analysis</h3>
+          <p>Every evaluation is driven by AI that understands your resume, your domain, and your target role.</p>
+        </article>
+        <article class="why-card reveal">
+          <div class="why-card-icon why-card-icon-2"><i class="bi bi-bullseye"></i></div>
+          <h3>Domain-Specific Evaluation</h3>
+          <p>Questions, assessments, and feedback tailored to your exact technical domain — not generic content.</p>
+        </article>
+        <article class="why-card reveal">
+          <div class="why-card-icon why-card-icon-3"><i class="bi bi-signpost-split"></i></div>
+          <h3>Structured Interview Journey</h3>
+          <p>A guided path from resume to certification, so you always know your next step.</p>
+        </article>
+        <article class="why-card reveal">
+          <div class="why-card-icon why-card-icon-4"><i class="bi bi-bar-chart-line"></i></div>
+          <h3>Real-Time Performance Insights</h3>
+          <p>Detailed score breakdowns, progress tracking, and actionable next steps after every assessment.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── BUILT FOR MODERN INTERVIEWS (Credibility Pipeline) ─── -->
+  <section class="landing-section pipeline-section" aria-label="Interview preparation pipeline">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-label">Complete preparation</span>
+        <h2>Built for Modern Technical Interviews</h2>
+        <p>A structured pipeline covering every stage of the interview process.</p>
+      </div>
+
+      <div class="pipeline-wrapper reveal">
+        <div class="pipeline-stages">
+          <div class="pipeline-stage">
+            <div class="pipeline-stage-icon pipeline-stage-resume"><i class="bi bi-file-earmark-check"></i></div>
+            <span>Resume Analysis</span>
+          </div>
+          <div class="pipeline-arrow" aria-hidden="true"><i class="bi bi-arrow-right"></i></div>
+          <div class="pipeline-stage">
+            <div class="pipeline-stage-icon pipeline-stage-aptitude"><i class="bi bi-award"></i></div>
+            <span>Aptitude Assessment</span>
+          </div>
+          <div class="pipeline-arrow" aria-hidden="true"><i class="bi bi-arrow-right"></i></div>
+          <div class="pipeline-stage">
+            <div class="pipeline-stage-icon pipeline-stage-coding"><i class="bi bi-code-slash"></i></div>
+            <span>Coding Challenge</span>
+          </div>
+          <div class="pipeline-arrow" aria-hidden="true"><i class="bi bi-arrow-right"></i></div>
+          <div class="pipeline-stage">
+            <div class="pipeline-stage-icon pipeline-stage-cert"><i class="bi bi-patch-check"></i></div>
+            <span>Certification</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── TOP PERFORMERS LEADERBOARD ─── -->
+  <section class="landing-section leaderboard-section" id="leaderboard" aria-labelledby="leaderboard-title">
+    <div class="container">
+      <div class="section-header reveal text-center mb-5">
+        <span class="section-label"><i class="bi bi-trophy-fill text-warning me-1"></i> Top Performers</span>
+        <h2 id="leaderboard-title">Candidate Readiness Leaderboard</h2>
+        <p>Live rankings calculated from verified assessment milestones: <code>(ATS + Aptitude + Coding) &divide; 3</code>.</p>
+      </div>
+
+      {% if leaderboard and leaderboard|length > 0 %}
+      <div class="row g-4 justify-content-center">
+        {% for candidate in leaderboard[:3] %}
+        {% set rank = loop.index %}
+        <div class="col-lg-4 col-md-6">
+          <div class="leaderboard-card reveal {% if rank == 1 %}rank-first{% elif rank == 2 %}rank-second{% elif rank == 3 %}rank-third{% endif %} h-100 p-4 rounded-4 position-relative" style="background: #ffffff; border: {% if rank == 1 %}2px solid #f59e0b{% elif rank == 2 %}1.5px solid #94a3b8{% else %}1.5px solid #d97706{% endif %}; box-shadow: 0 10px 30px rgba(0,0,0,0.06);">
+            <!-- Rank Crown Badge -->
+            <div class="d-flex align-items-center justify-content-between mb-3">
+              <span class="badge rounded-pill px-3 py-1.5 fw-bold font-monospace text-uppercase" style="{% if rank == 1 %}background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; box-shadow: 0 4px 12px rgba(245,158,11,0.3);{% elif rank == 2 %}background: linear-gradient(135deg, #64748b, #475569); color: #fff;{% else %}background: linear-gradient(135deg, #b45309, #78350f); color: #fff;{% endif %} font-size: 0.8rem;">
+                {% if rank == 1 %}🏆 1st Place{% elif rank == 2 %}🥈 2nd Place{% else %}🥉 3rd Place{% endif %}
+              </span>
+              {% if candidate.journey_completed %}
+              <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 small font-monospace" style="font-size: 0.72rem;">
+                <i class="bi bi-shield-check me-1"></i>Verified Journey
+              </span>
+              {% endif %}
+            </div>
+
+            <!-- Candidate Identity -->
+            <div class="d-flex align-items-center gap-3 mb-3">
+              <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-xs flex-shrink-0" style="width: 52px; height: 52px; font-size: 1.25rem; {% if rank == 1 %}background: rgba(245,158,11,0.12); color: #d97706; border: 2px solid rgba(245,158,11,0.35);{% elif rank == 2 %}background: rgba(100,116,139,0.12); color: #475569; border: 2px solid rgba(100,116,139,0.3);{% else %}background: rgba(180,83,9,0.12); color: #92400e; border: 2px solid rgba(180,83,9,0.3);{% endif %}">
+                {{ candidate.initial }}
+              </div>
+              <div class="overflow-hidden">
+                <h3 class="h5 fw-bold text-main mb-0.5 text-truncate" style="font-size: 1.15rem;">{{ candidate.name }}</h3>
+                <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-0.5 font-monospace text-truncate d-inline-block max-w-100" style="font-size: 0.75rem;">
+                  <i class="bi bi-code-square me-1 text-primary"></i>{{ candidate.domain }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Primary Readiness Score Display -->
+            <div class="p-3 rounded-3 mb-3 text-center" style="background: {% if rank == 1 %}linear-gradient(180deg, rgba(245,158,11,0.06), rgba(245,158,11,0.02)){% else %}rgba(248,250,252,0.8){% endif %}; border: 1px solid rgba(226,232,240,0.8);">
+              <span class="text-muted text-uppercase fw-semibold d-block mb-1" style="font-size: 0.72rem; letter-spacing: 0.05em;">Overall Readiness Score</span>
+              <div class="display-6 fw-bold text-main" style="letter-spacing: -0.02em;">
+                {{ candidate.score }}<span class="text-muted" style="font-size: 1.25rem; font-weight: 500;">%</span>
+              </div>
+            </div>
+
+            <!-- Milestone Breakdown -->
+            <div class="row g-2 text-center small mb-3">
+              <div class="col-4">
+                <div class="p-2 rounded-2 bg-light border">
+                  <span class="text-muted d-block" style="font-size: 0.7rem;">ATS Match</span>
+                  <strong class="text-main fw-bold">{{ candidate.ats_score }}%</strong>
+                </div>
+              </div>
+              <div class="col-4">
+                <div class="p-2 rounded-2 bg-light border">
+                  <span class="text-muted d-block" style="font-size: 0.7rem;">Aptitude</span>
+                  <strong class="text-main fw-bold">{{ candidate.aptitude_score }}%</strong>
+                </div>
+              </div>
+              <div class="col-4">
+                <div class="p-2 rounded-2 bg-light border">
+                  <span class="text-muted d-block" style="font-size: 0.7rem;">Coding</span>
+                  <strong class="text-main fw-bold">{{ candidate.coding_score }}%</strong>
+                </div>
+              </div>
+            </div>
+
+            {% if candidate.certificate_id %}
+            <div class="text-center pt-1 border-top" style="border-color: rgba(226,232,240,0.6) !important;">
+              <small class="text-muted font-monospace" style="font-size: 0.7rem;">
+                <i class="bi bi-patch-check-fill text-primary me-1"></i>Cert ID: {{ candidate.certificate_id }}
+              </small>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <!-- Professional Empty State -->
+      <div class="leaderboard-empty-card mx-auto text-center p-5 rounded-4" style="max-width: 620px; background: #ffffff; border: 1.5px dashed #cbd5e1; box-shadow: 0 10px 25px rgba(0,0,0,0.03);">
+        <div class="rounded-circle d-inline-flex align-items-center justify-content-center bg-light text-muted mb-3" style="width: 68px; height: 68px; font-size: 2rem;">
+          <i class="bi bi-trophy"></i>
+        </div>
+        <h3 class="h5 fw-bold text-main mb-2">No Candidates on Leaderboard Yet</h3>
+        <p class="text-muted mb-4" style="font-size: 0.95rem; line-height: 1.6;">
+          Complete the Interview.ai journey to appear on the leaderboard. Pass the Resume Analysis, Aptitude Round, and Coding Challenge with verified scores to secure your rank.
+        </p>
+        <a href="{% if current_user.is_authenticated %}{{ url_for('dashboard') }}{% else %}{{ url_for('register') }}{% endif %}" class="landing-btn landing-btn-primary landing-btn-sm d-inline-flex align-items-center gap-2">
+          <span>Start Your Interview Journey</span> <i class="bi bi-arrow-right"></i>
+        </a>
+      </div>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- ─── FAQ ─── -->
+  <section class="landing-section faq-section" id="faq" aria-labelledby="faq-title">
+    <div class="container faq-layout">
+      <div class="faq-intro reveal">
+        <span class="section-label">Common questions</span>
+        <h2 id="faq-title">Everything you need to know</h2>
+        <p>Can&rsquo;t find the answer you need? Reach out and we&rsquo;ll help you get started.</p>
+        <a href="mailto:support@interview.ai" class="faq-contact">Contact support <i class="bi bi-arrow-up-right"></i></a>
+      </div>
+
+      <div class="accordion landing-accordion reveal" id="faqAccordion">
+        {% set faqs = [
+          {"q": "What is Interview.ai?", "a": "Interview.ai is an AI-powered preparation platform that combines resume analysis, personalized mock interviews, coding practice, feedback, and progress reports in one workspace."},
+          {"q": "How does ATS Analysis work?", "a": "Upload your PDF resume with a job description. The AI extracts the content, compares relevant skills and keywords, calculates a match score, and recommends specific improvements."},
+          {"q": "Is Interview.ai free to use?", "a": "You can create an account and begin practicing for free. Available limits and additional capabilities are shown inside your candidate dashboard."},
+          {"q": "Which programming languages are supported?", "a": "The coding workspace currently focuses on Python challenges, while the interview question bank supports a broad range of software, data, AI, cloud, and security domains."},
+          {"q": "What is the Interview Journey?", "a": "The Interview Journey is a structured path that guides you through Resume Analysis, Aptitude Assessment, and Coding Challenges. Complete all stages to earn a verified Certificate of Completion."}
+        ] %}
+        {% for faq in faqs %}
+        <div class="accordion-item">
+          <h3 class="accordion-header" id="faqHeading{{ loop.index }}">
+            <button class="accordion-button{% if not loop.first %} collapsed{% endif %}" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#faqCollapse{{ loop.index }}"
+                    aria-expanded="{{ 'true' if loop.first else 'false' }}"
+                    aria-controls="faqCollapse{{ loop.index }}">
+              <span>{{ faq.q }}</span>
+              <i class="bi bi-plus-lg" aria-hidden="true"></i>
+            </button>
+          </h3>
+          <div id="faqCollapse{{ loop.index }}" class="accordion-collapse collapse{% if loop.first %} show{% endif %}"
+               aria-labelledby="faqHeading{{ loop.index }}" data-bs-parent="#faqAccordion">
+            <div class="accordion-body">{{ faq.a }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── FINAL CTA ─── -->
+  <section class="cta-section" aria-labelledby="cta-title">
+    <div class="container">
+      <div class="cta-banner reveal">
+        <div class="cta-glow cta-glow-1" aria-hidden="true"></div>
+        <div class="cta-glow cta-glow-2" aria-hidden="true"></div>
+        <div class="cta-content">
+          <span class="cta-icon" aria-hidden="true"><i class="bi bi-stars"></i></span>
+          <h2 id="cta-title">Ready to Test Your Interview Readiness?</h2>
+          <p>Start your personalized AI interview journey today. Analyze, practice, code, and earn your certificate.</p>
+          <div class="cta-actions">
+            <a href="{{ url_for('register') }}" class="landing-btn landing-btn-white landing-btn-lg">
+              Start Your Journey <i class="bi bi-arrow-right"></i>
+            </a>
+            <a href="#features" class="landing-btn landing-btn-outline-light landing-btn-lg">Explore Features</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ═══════════════════════════════════════════════
+     FOOTER
+     ═══════════════════════════════════════════════ -->
+<footer class="landing-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand-column">
+        <a class="landing-brand footer-brand" href="#top" aria-label="Interview.ai home">
+          <span class="landing-brand-mark" aria-hidden="true"><i class="bi bi-cpu-fill"></i></span>
+          <span>Interview<span class="brand-dot">.ai</span></span>
+        </a>
+        <p>AI-powered interview preparation and assessment. Practice with purpose, interview with confidence.</p>
+      </div>
+
+      <div class="footer-column">
+        <h2>Platform</h2>
+        <a href="#features">Features</a>
+        <a href="#how-it-works">How It Works</a>
+        <a href="#why-us">Why Interview.ai</a>
+        <a href="#faq">FAQ</a>
+      </div>
+
+      <div class="footer-column">
+        <h2>Features</h2>
+        <a href="{{ url_for('resume_analyzer') }}">Resume Analyzer</a>
+        <a href="{{ url_for('interview_assessment') }}">Mock Interview</a>
+        <a href="#features">Coding Practice</a>
+        <a href="#features">Performance Reports</a>
+      </div>
+
+      <div class="footer-column">
+        <h2>Account</h2>
+        <a href="{{ url_for('login') }}">Login</a>
+        <a href="{{ url_for('register') }}">Register</a>
+        <a href="#why-us">About</a>
+        <a href="mailto:support@interview.ai">Contact</a>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <span>&copy; {{ current_year }} Interview.ai. All rights reserved.</span>
+      <span>AI-powered interview preparation platform.</span>
+    </div>
+  </div>
+</footer>
+<a href="{{ url_for('admin_login') }}" class="footer-admin-link">Admin Login</a>
+{% endblock %}
+
+{% block extra_js %}<script src="{{ url_for('static', filename='js/landing.js') }}"></script>{% endblock %}

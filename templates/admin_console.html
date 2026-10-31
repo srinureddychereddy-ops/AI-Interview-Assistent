@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ section|replace('-',' ')|title }} · Interview.ai Admin</title><link rel="stylesheet" href="{{ url_for('static',filename='css/admin.css') }}"><link rel="stylesheet" href="{{ url_for('static',filename='css/admin_console.css') }}"></head>
+<body class="admin-console">
+<aside class="admin-side" id="adminSidebar"><a class="admin-brand" href="{{ url_for('admin_dashboard') }}"><span>✦</span><b>Interview.ai</b><small>ADMIN</small></a>
+  <nav>
+    <label>ADMINISTRATION</label>
+    {% for endpoint,label,icon in [
+        ('admin_dashboard','Dashboard','⌂'),
+        ('admin_users','Users','♙'),
+        ('admin_resumes','Resume Analyses','▤'),
+        ('admin_coding','Aptitude Round','✓'),
+        ('admin_coding_assessments','Coding Round','⌨'),
+        ('admin_certificates','Certificates','★'),
+        ('admin_analytics','Analytics','⌁')
+    ] %}<a href="{{ url_for(endpoint) }}" class="{{ 'active' if request.endpoint==endpoint or (endpoint=='admin_coding_assessments' and section=='coding-detail') }}"><i>{{ icon }}</i>{{ label }}</a>{% endfor %}
+    <label>ACCOUNT</label>
+    <a href="{{ url_for('admin_profile') }}" class="{{ 'active' if section=='profile' }}"><i>♙</i>Admin Profile</a><a href="{{ url_for('admin_settings') }}" class="{{ 'active' if section=='settings' }}"><i>⚙</i>Settings</a>
+  </nav>
+  <form class="admin-side-logout" method="post" action="{{ url_for('admin_logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button><i>↪</i> Logout</button></form>
+</aside>
+<main class="admin-main">
+  <header class="admin-header"><button class="menu" type="button" aria-label="Toggle navigation">☰</button><div><span class="eyebrow">INTERVIEW.AI ADMIN</span><h1>{{ section|replace('-',' ')|title }}</h1></div><div class="admin-header-tools"><button class="admin-icon" type="button" aria-label="Notifications">♢</button><button class="admin-icon login-theme" type="button" aria-label="Toggle theme">◐</button><div class="admin-identity" style="display: flex; align-items: center; gap: 8px;"><span class="admin-avatar" style="display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; background: rgba(79, 70, 229, 0.1); color: #4f46e5; border-radius: 50%; font-weight: 800; font-size: 0.85rem; border: 1px solid rgba(79, 70, 229, 0.2);">{{ current_user.username[:1]|upper }}</span><div style="display: inline-flex; flex-direction: column;"><strong style="line-height: 1.2; font-size: 0.85rem;">{{ current_user.username }}</strong><small style="line-height: 1.2; font-size: 0.75rem; color: #64748b;">{{ current_user.email }}</small></div></div></div></header>
+  {% with messages=get_flashed_messages(with_categories=true) %}{% for category,message in messages %}<div class="notice {{ category }}">{{ message }}</div>{% endfor %}{% endwith %}
+
+  {% if section=='dashboard' %}
+  <section class="metric-grid">
+    <article><span>Total Users</span><strong class="stat" data-value="{{ stats.total_users }}">{{ stats.total_users }}</strong><small>Live registered candidates</small></article>
+    <article><span>Resume Analyses</span><strong class="stat" data-value="{{ stats.resume_analyses }}">{{ stats.resume_analyses }}</strong><small>Evaluated records</small></article>
+    <article><span>Aptitude Attempts</span><strong class="stat" data-value="{{ stats.aptitude_attempts }}">{{ stats.aptitude_attempts }}</strong><small>Completed sessions</small></article>
+    <article><span>Coding Attempts</span><strong class="stat" data-value="{{ stats.coding_attempts }}">{{ stats.coding_attempts }}</strong><small>Evaluated challenges</small></article>
+    <article><span>Certificates Issued</span><strong class="stat" data-value="{{ stats.certificates_issued }}">{{ stats.certificates_issued }}</strong><small>Verified credentials</small></article>
+    <article><span>Completed Journeys</span><strong class="stat" data-value="{{ stats.completed_journeys }}">{{ stats.completed_journeys }}</strong><small>Full pipeline graduates</small></article>
+    <article><span>Average ATS Score</span><strong class="stat" data-value="{{ stats.avg_ats or 0 }}">{{ (stats.avg_ats|string + '%') if stats.avg_ats is not none else '—' }}</strong><small>Across all analyses</small></article>
+    <article><span>Average Aptitude</span><strong class="stat" data-value="{{ stats.avg_aptitude or 0 }}">{{ (stats.avg_aptitude|string + '%') if stats.avg_aptitude is not none else '—' }}</strong><small>Across all assessments</small></article>
+  </section>
+  <section class="admin-dashboard-grid">
+    <article class="panel">
+      <div class="panel-head"><div><span class="eyebrow">USER ACTIVITY</span><h2>Recent users</h2></div><a href="{{ url_for('admin_users') }}">View all</a></div>
+      {% for u in users[:5] %}
+      <div class="recent-item"><div><strong>{{ u.username }}</strong><small>{{ u.email }}</small></div><span class="badge {{ 'success' if u.is_active_account else 'danger' }}">{{ 'Active' if u.is_active_account else 'Disabled' }}</span></div>
+      {% else %}
+      <p class="empty">No users yet.</p>
+      {% endfor %}
+    </article>
+    <article class="panel">
+      <div class="panel-head"><div><span class="eyebrow">APTITUDE ROUND</span><h2>Recent Aptitude</h2></div><a href="{{ url_for('admin_coding') }}">View all</a></div>
+      {% for i in mcqs[:5] %}
+      <div class="recent-item"><div><strong>{{ i.user.username }}</strong><small>{{ i.domain }} · {{ i.difficulty }}</small></div><span class="badge {{ 'success' if i.score >= 80 else 'danger' }}">{{ i.score }}%</span></div>
+      {% else %}
+      <p class="empty">No aptitude assessments recorded.</p>
+      {% endfor %}
+    </article>
+    <article class="panel">
+      <div class="panel-head"><div><span class="eyebrow">CODING ROUND</span><h2>Recent Coding</h2></div><a href="{{ url_for('admin_coding_assessments') }}">View all</a></div>
+      {% for c in codings[:5] %}
+      <div class="recent-item"><div><strong>{{ c.user.username }}</strong><small>{{ c.domain }} · {{ c.questions_solved }}/{{ c.total_questions }} solved</small></div><span class="badge {{ 'success' if c.overall_score >= 70 else 'warning' }}">{{ c.overall_score|round(1) }}%</span></div>
+      {% else %}
+      <p class="empty">No coding assessments recorded.</p>
+      {% endfor %}
+    </article>
+    <article class="panel">
+      <div class="panel-head"><div><span class="eyebrow">RESUME ANALYTICS</span><h2>Recent analyses</h2></div><a href="{{ url_for('admin_resumes') }}">View all</a></div>
+      {% for r in resumes[:5] %}
+      <div class="recent-item"><div><strong>{{ r.user.username }}</strong><small>{{ r.job_role or 'General analysis' }}</small></div><span class="badge {{ 'success' if (r.ats_score or 0) >= 80 else 'warning' }}">{{ (r.ats_score|round(1)|string + '%') if r.ats_score is not none else '—' }}</span></div>
+      {% else %}
+      <p class="empty">No resume analyses recorded.</p>
+      {% endfor %}
+    </article>
+    <article class="panel">
+      <div class="panel-head"><div><span class="eyebrow">CERTIFICATES</span><h2>Recent Certificates</h2></div><a href="{{ url_for('admin_certificates') }}">View all</a></div>
+      {% for cert in certificates[:5] %}
+      <div class="recent-item"><div><strong>{{ cert.candidate_name }}</strong><small>{{ cert.domain }} · {{ cert.certificate_id }}</small></div><span class="badge success">Verified</span></div>
+      {% else %}
+      <p class="empty">No certificates issued yet.</p>
+      {% endfor %}
+    </article>
+    <article class="panel">
+      <div class="panel-head"><div><span class="eyebrow">CONTROL PANEL</span><h2>Quick Actions</h2></div></div>
+      <div class="quick-actions-grid" style="display: grid; grid-template-columns: 1fr; gap: 0.5rem; margin-top: 1rem;">
+        <a href="{{ url_for('admin_users') }}" class="btn btn-sm btn-glass text-start py-2 px-3" style="text-decoration: none; color: var(--text-primary); border: 1px solid var(--border-base); border-radius: var(--radius-sm); background: var(--bg-hover);"><span style="margin-right: 8px;">♙</span> Manage Users</a>
+        <a href="{{ url_for('admin_resumes') }}" class="btn btn-sm btn-glass text-start py-2 px-3" style="text-decoration: none; color: var(--text-primary); border: 1px solid var(--border-base); border-radius: var(--radius-sm); background: var(--bg-hover);"><span style="margin-right: 8px;">▤</span> View Resume Analyses</a>
+        <a href="{{ url_for('admin_coding') }}" class="btn btn-sm btn-glass text-start py-2 px-3" style="text-decoration: none; color: var(--text-primary); border: 1px solid var(--border-base); border-radius: var(--radius-sm); background: var(--bg-hover);"><span style="margin-right: 8px;">✓</span> View Aptitude Assessments</a>
+        <a href="{{ url_for('admin_coding_assessments') }}" class="btn btn-sm btn-glass text-start py-2 px-3" style="text-decoration: none; color: var(--text-primary); border: 1px solid var(--border-base); border-radius: var(--radius-sm); background: var(--bg-hover);"><span style="margin-right: 8px;">⌨</span> View Coding Assessments</a>
+        <a href="{{ url_for('admin_certificates') }}" class="btn btn-sm btn-glass text-start py-2 px-3" style="text-decoration: none; color: var(--text-primary); border: 1px solid var(--border-base); border-radius: var(--radius-sm); background: var(--bg-hover);"><span style="margin-right: 8px;">★</span> View Certificates</a>
+        <a href="{{ url_for('admin_analytics') }}" class="btn btn-sm btn-glass text-start py-2 px-3" style="text-decoration: none; color: var(--text-primary); border: 1px solid var(--border-base); border-radius: var(--radius-sm); background: var(--bg-hover);"><span style="margin-right: 8px;">⌁</span> Open Analytics</a>
+      </div>
+    </article>
+  </section>
+
+  {% elif section=='users' %}
+  <section class="panel"><div class="panel-head"><div><h2>Candidate accounts</h2><span>{{ pagination.total }} matching accounts</span></div></div><form class="admin-filters" method="get"><input name="q" value="{{ search }}" placeholder="Search name or email"><select name="role"><option value="">All roles</option><option value="user" {{ 'selected' if role_filter=='user' }}>Users</option><option value="admin" {{ 'selected' if role_filter=='admin' }}>Admins</option></select><select name="status"><option value="">All statuses</option><option value="active" {{ 'selected' if status_filter=='active' }}>Active</option><option value="disabled" {{ 'selected' if status_filter=='disabled' }}>Disabled</option></select><button class="primary">Apply filters</button></form>
+  <div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Selected Domain</th><th>Role</th><th>Registered</th><th>Journey Status</th><th>Latest Score</th><th>Status</th><th>Actions</th></tr></thead><tbody>{% for row in user_rows_enhanced %}{% set u=row.user %}<tr><td><strong>{{ u.username }}</strong></td><td>{{ u.email }}</td><td><span class="badge" style="background: rgba(79, 70, 229, 0.08); color: #4338ca; border: 1px solid rgba(79, 70, 229, 0.15); font-weight: 500;">{{ row.domain }}</span></td><td><span class="badge purple">{{ u.role }}</span></td><td>{{ u.created_at.strftime('%d %b %Y') if u.created_at else '—' }}</td><td><span class="badge {{ 'success' if row.journey_status=='Completed' else 'warning' if row.journey_status=='In Progress' else 'muted' }}">{{ row.journey_status }}</span></td><td style="font-weight: 600; color: #4f46e5;">{{ row.latest_score }}</td><td><span class="badge {{ 'success' if u.is_active_account else 'danger' }}">{{ 'Active' if u.is_active_account else 'Disabled' }}</span></td><td class="actions"><a href="{{ url_for('admin_user_detail',user_id=u.id) }}">View</a>{% if u.id != current_user.id %}<form method="post" action="{{ url_for('admin_user_action',user_id=u.id,action='toggle') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button>{{ 'Disable' if u.is_active_account else 'Enable' }}</button></form><form method="post" action="{{ url_for('admin_user_action',user_id=u.id,action='delete') }}" data-confirm="Permanently delete this user and their history?"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="danger-text">Delete</button></form>{% endif %}</td></tr>{% else %}<tr><td colspan="9" class="empty">No matching users.</td></tr>{% endfor %}</tbody></table></div>
+  {% if pagination.pages>1 %}<nav class="pagination">{% for p in pagination.iter_pages() %}{% if p %}<a class="{{ 'active' if p==pagination.page }}" href="{{ url_for('admin_users',page=p,q=search,role=role_filter,status=status_filter) }}">{{ p }}</a>{% else %}<span>…</span>{% endif %}{% endfor %}</nav>{% endif %}</section>
+
+  {% elif section=='interviews' %}
+  <section class="panel"><div class="panel-head"><h2>Interview results</h2><span>AI interview database records</span></div><div class="table-wrap"><table><thead><tr><th>Candidate</th><th>Interview type</th><th>Domain</th><th>Difficulty</th><th>Score</th><th>Status</th><th>Date</th><th></th></tr></thead><tbody>{% for i in interviews %}<tr><td>{{ i.user.username }}</td><td>{{ i.interview_type }}</td><td>{{ i.role }}</td><td>{{ i.experience }}</td><td>{{ i.report.overall_score if i.report else '—' }}</td><td><span class="badge {{ 'success' if i.status=='completed' else 'muted' }}">{{ i.status }}</span></td><td>{{ i.start_time.strftime('%d %b %Y') }}</td><td><a href="{{ url_for('admin_interview_detail',kind='ai',item_id=i.id) }}">Inspect</a></td></tr>{% else %}<tr><td colspan="8" class="empty">No AI interviews recorded.</td></tr>{% endfor %}</tbody></table></div></section>
+
+  {% elif section=='resumes' %}
+  <section class="panel"><div class="panel-head"><h2>Resume analyses</h2><span>Actual candidate resume evaluations</span></div><div class="table-wrap"><table><thead><tr><th>Candidate</th><th>Domain / Job Role</th><th>ATS Score</th><th>Status</th><th>Date</th><th>Action</th></tr></thead><tbody>{% for row in resume_rows %}{% set r=row.record %}<tr><td><strong>{{ r.user.username }}</strong><br><small style="color: var(--text-secondary);">{{ r.user.email }}</small></td><td><span class="badge" style="background: rgba(79, 70, 229, 0.08); color: #4338ca; border: 1px solid rgba(79, 70, 229, 0.15);">{{ r.job_role or 'General' }}</span></td><td style="font-weight: 700; font-size: 1rem; color: {{ '#16a34a' if (r.ats_score or 0) >= 80 else '#d97706' }};">{{ (r.ats_score|round(1)|string + '%') if r.ats_score is not none else '—' }}</td><td><span class="badge {{ 'success' if (r.ats_score or 0) >= 80 else 'warning' }}">{{ 'Passed (≥80%)' if (r.ats_score or 0) >= 80 else 'Needs Improvement' }}</span></td><td>{{ r.created_at.strftime('%d %b %Y, %H:%M') if r.created_at else '—' }}</td><td><a href="{{ url_for('admin_resume_detail',item_id=r.id) }}">View</a></td></tr>{% else %}<tr><td colspan="6" class="empty">No resume analyses recorded.</td></tr>{% endfor %}</tbody></table></div></section>
+
+  {% elif section=='coding' %}
+  <section class="panel"><div class="panel-head"><h2>Aptitude Assessments</h2><span>Candidate aptitude assessment rounds</span></div><div class="table-wrap"><table><thead><tr><th>Candidate</th><th>Domain</th><th>Score</th><th>Status</th><th>Date</th><th>Action</th></tr></thead><tbody>{% for i in mcqs %}<tr><td><strong>{{ i.user.username }}</strong><br><small style="color: var(--text-secondary);">{{ i.user.email }}</small></td><td><span class="badge" style="background: rgba(79, 70, 229, 0.08); color: #4338ca; border: 1px solid rgba(79, 70, 229, 0.15);">{{ i.domain }}</span></td><td style="font-weight: 700; font-size: 1rem; color: {{ '#16a34a' if i.score >= 80 else '#dc2626' }};">{{ i.score }}%</td><td><span class="badge {{ 'success' if i.score >= 80 else 'danger' }}">{{ 'Passed (≥80%)' if i.score >= 80 else 'Needs Retake' }}</span></td><td>{{ i.start_time.strftime('%d %b %Y') if i.start_time else '—' }}</td><td><a href="{{ url_for('admin_interview_detail',kind='mcq',item_id=i.id) }}">Inspect</a></td></tr>{% else %}<tr><td colspan="6" class="empty">No aptitude assessments recorded.</td></tr>{% endfor %}</tbody></table></div></section>
+
+  {% elif section=='coding-assessments' %}
+  <section class="panel"><div class="panel-head"><h2>Coding Round Assessments</h2><span>Real candidate coding evaluation submissions</span></div><div class="table-wrap"><table><thead><tr><th>Candidate</th><th>Domain</th><th>Score</th><th>Questions Solved</th><th>Status</th><th>Date</th><th>Action</th></tr></thead><tbody>{% for c in codings %}<tr><td><strong>{{ c.user.username }}</strong><br><small style="color: var(--text-secondary);">{{ c.user.email }}</small></td><td><span class="badge" style="background: rgba(79, 70, 229, 0.08); color: #4338ca; border: 1px solid rgba(79, 70, 229, 0.15);">{{ c.domain }}</span></td><td style="font-weight: 700; font-size: 1rem; color: {{ '#16a34a' if c.overall_score >= 70 else '#d97706' }};">{{ c.overall_score|round(1) }}%</td><td><span class="badge" style="font-weight: 600;">{{ c.questions_solved }} / {{ c.total_questions }} solved</span><br><small style="color: var(--text-secondary);">{{ c.passed_test_cases }} tests passed</small></td><td><span class="badge {{ 'success' if c.overall_score >= 70 else 'warning' }}">{{ 'Passed' if c.overall_score >= 70 else 'Completed' }}</span></td><td>{{ c.submitted_at.strftime('%d %b %Y, %H:%M') if c.submitted_at else '—' }}</td><td><a href="{{ url_for('admin_coding_detail',item_id=c.id) }}">Inspect</a></td></tr>{% else %}<tr><td colspan="7" class="empty">No coding round assessments recorded.</td></tr>{% endfor %}</tbody></table></div></section>
+
+  {% elif section=='certificates' %}
+  <section class="panel"><div class="panel-head"><h2>Issued Certificates</h2><span>Verified candidate completion certificates</span></div><div class="table-wrap"><table><thead><tr><th>Candidate</th><th>Certificate ID</th><th>Domain</th><th>Score Breakdown</th><th>Issue Date</th><th>Status</th><th>Action</th></tr></thead><tbody>{% for cert in certificates %}<tr><td><strong>{{ cert.candidate_name }}</strong><br><small style="color: var(--text-secondary);">{{ cert.user.email }}</small></td><td><code style="font-size: 0.85rem; font-weight: 600; color: #4f46e5; background: rgba(79, 70, 229, 0.08); padding: 2px 6px; border-radius: 4px;">{{ cert.certificate_id }}</code></td><td><span class="badge" style="background: rgba(79, 70, 229, 0.08); color: #4338ca; border: 1px solid rgba(79, 70, 229, 0.15);">{{ cert.domain }}</span></td><td style="font-size: 0.85rem;"><span style="color: #16a34a; font-weight: 600;">ATS: {{ cert.ats_score|round(1) }}%</span> · <span style="color: #4f46e5; font-weight: 600;">Apt: {{ cert.aptitude_score }}%</span> · <span style="color: #0891b2; font-weight: 600;">Code: {{ cert.coding_score|round(1) }}%</span></td><td>{{ cert.issue_date.strftime('%d %b %Y') if cert.issue_date else '—' }}</td><td><span class="badge success">✓ Verified & Valid</span></td><td><a href="{{ url_for('view_certificate',certificate_id=cert.certificate_id) }}" target="_blank">View ↗</a></td></tr>{% else %}<tr><td colspan="7" class="empty">No certificates issued yet.</td></tr>{% endfor %}</tbody></table></div></section>
+
+  {% elif section=='coding-detail' %}
+  <a href="{{ url_for('admin_coding_assessments') }}" class="back-link" style="display: inline-block; margin-bottom: 1rem; text-decoration: none;">← Back to coding assessments</a>
+  <section class="panel">
+    <span class="eyebrow">CODING ASSESSMENT #{{ item.id }}</span>
+    <h2 style="font-size: 1.5rem; margin-top: 0.25rem; margin-bottom: 1rem;">{{ item.domain }} · {{ item.role }}</h2>
+    <dl class="admin-profile-card dl" style="display: grid; grid-template-columns: 160px 1fr; margin-bottom: 1.5rem;">
+      <dt style="padding: 0.5rem 0; color: var(--text-secondary);">Candidate</dt><dd style="padding: 0.5rem 0; font-weight: 500;">{{ item.user.username }} · {{ item.user.email }}</dd>
+      <dt style="padding: 0.5rem 0; color: var(--text-secondary);">Difficulty</dt><dd style="padding: 0.5rem 0; font-weight: 500;">{{ item.difficulty }}</dd>
+      <dt style="padding: 0.5rem 0; color: var(--text-secondary);">Language</dt><dd style="padding: 0.5rem 0; font-weight: 500;">{{ item.language }}</dd>
+      <dt style="padding: 0.5rem 0; color: var(--text-secondary);">Overall Score</dt><dd style="padding: 0.5rem 0; font-weight: bold; color: var(--color-primary); font-size: 1.1rem;">{{ item.overall_score|round(1) }}%</dd>
+      <dt style="padding: 0.5rem 0; color: var(--text-secondary);">Questions Solved</dt><dd style="padding: 0.5rem 0; font-weight: 500;">{{ item.questions_solved }} / {{ item.total_questions }} solved</dd>
+      <dt style="padding: 0.5rem 0; color: var(--text-secondary);">Test Cases</dt><dd style="padding: 0.5rem 0; font-weight: 500;">{{ item.passed_test_cases }} passed / {{ item.total_test_cases }} total</dd>
+      <dt style="padding: 0.5rem 0; color: var(--text-secondary);">Submitted At</dt><dd style="padding: 0.5rem 0; font-weight: 500;">{{ item.submitted_at.strftime('%d %b %Y, %H:%M:%S') if item.submitted_at else '—' }}</dd>
+    </dl>
+    <h3 style="font-size: 1.1rem; border-bottom: 1px solid var(--border-base); padding-bottom: 0.5rem; margin-bottom: 1rem;">Submitted Solutions & Test Results</h3>
+    {% if results %}
+      {% for res in results %}
+      <article class="question" style="padding: 1rem; border: 1px solid var(--border-base); border-radius: var(--radius-sm); margin-bottom: 1rem; background: var(--bg-hover);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <h4 style="margin: 0; font-size: 1rem;">{{ res.question_title or ('Question #' ~ loop.index) }}</h4>
+          <span class="badge {{ 'success' if res.passed_all else 'warning' }}">{{ 'All Tests Passed' if res.passed_all else (res.passed_count|string ~ '/' ~ res.total_count|string ~ ' Tests Passed') }}</span>
+        </div>
+        <p style="margin: 0.25rem 0; font-size: 0.85rem; color: var(--text-secondary);">Score: <strong>{{ res.score|round(1) }}%</strong> · Execution Time: {{ res.execution_time_ms or 0 }}ms</p>
+        {% if res.code %}
+        <pre style="white-space: pre-wrap; font-family: monospace; font-size: 0.85rem; background: #0f172a; color: #f8fafc; padding: 0.75rem; border-radius: 6px; overflow-x: auto; margin-top: 0.5rem;">{{ res.code }}</pre>
+        {% endif %}
+      </article>
+      {% endfor %}
+    {% else %}
+      <p class="empty" style="text-align: center; padding: 2rem 0; color: var(--text-secondary);">No submission code recorded.</p>
+    {% endif %}
+  </section>
+
+  {% elif section == 'analytics' %}
+  <section class="metric-grid"><article><span>Active users</span><strong>{{ stats.active_users }}</strong></article><article><span>Completion rate</span><strong>{{ ((stats.completed_interviews/stats.total_interviews*100)|round(1)) if stats.total_interviews else '—' }}%</strong></article><article><span>Average interview</span><strong>{{ stats.avg_interview or '—' }}</strong></article><article><span>Average ATS</span><strong>{{ stats.avg_ats or '—' }}</strong></article></section><section class="chart-grid">{% for id,title in [('growth','User growth'),('activity','Interview completion'),('scores','Average scores'),('ats','ATS distribution'),('domains','Interview types')] %}<article class="panel chart-card"><div class="panel-head"><h2>{{ title }}</h2><span>Real database data</span></div><canvas data-chart='{{ charts[id]|tojson }}'></canvas></article>{% endfor %}</section>
+
+  {% elif section=='system' %}
+  <section class="system-grid">{% for s in system_services %}<article class="panel" id="{{ 'gemini' if 'Gemini' in s.name else 'n8n' if 'n8n' in s.name else 'smtp' if 'SMTP' in s.name else '' }}"><div class="service-title"><span class="health-dot {{ s.status|lower }}"></span><div><h2>{{ s.name }}</h2><small>Last checked {{ s.checked_at.strftime('%d %b %Y, %H:%M:%S') }} UTC</small></div></div><span class="badge {{ 'success' if s.status=='Operational' else 'warning' if s.status=='Warning' else 'danger' }}">{{ s.status }}</span>{% if s.error %}<p class="service-error">{{ s.error }}</p>{% endif %}</article>{% endfor %}</section>
+
+  {% elif section=='profile' %}
+  <section class="panel admin-profile-card"><span class="admin-profile-avatar">{{ current_user.username[:1]|upper }}</span><div><span class="eyebrow">ADMINISTRATOR</span><h2>{{ current_user.username }}</h2><p>{{ current_user.email }}</p><dl><dt>Role</dt><dd>{{ current_user.role }}</dd><dt>Account status</dt><dd>Active</dd><dt>Joined</dt><dd>{{ current_user.created_at.strftime('%d %b %Y') if current_user.created_at else '—' }}</dd><dt>Last login</dt><dd>{{ current_user.profile.last_login if current_user.profile and current_user.profile.last_login else 'Not recorded' }}</dd></dl></div></section>
+
+  {% elif section=='settings' %}
+  <form class="settings" method="post" action="{{ url_for('admin_settings_update') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><section class="panel"><div class="panel-head"><div><h2>Platform settings</h2><span>Safe non-secret configuration only</span></div></div><div class="form-grid"><label>Maintenance mode<select name="maintenance_mode"><option value="off" {{ 'selected' if settings_dict.get('maintenance_mode')=='off' }}>Off</option><option value="on" {{ 'selected' if settings_dict.get('maintenance_mode')=='on' }}>On</option></select></label><label>Default difficulty<select name="default_difficulty"><option value="Medium" {{ 'selected' if settings_dict.get('default_difficulty')=='Medium' }}>Medium</option><option value="Easy" {{ 'selected' if settings_dict.get('default_difficulty')=='Easy' }}>Easy</option><option value="Hard" {{ 'selected' if settings_dict.get('default_difficulty')=='Hard' }}>Hard</option></select></label></div></section><button class="primary">Save settings</button></form>
+
+  {% elif section=='user-detail' %}
+  <a href="{{ url_for('admin_users') }}" class="back-link" style="display: inline-block; margin-bottom: 1rem; text-decoration: none;">← Back to users</a>
+  <div class="user-profile-layout" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem; margin-top: 1rem;">
+    <!-- Left Side: Profile Card -->
+    <div class="panel">
+      <div style="text-align: center; padding: 1.5rem 0; border-bottom: 1px solid var(--border-base); margin-bottom: 1.5rem;">
+        <span style="display: inline-flex; align-items: center; justify-content: center; width: 80px; height: 80px; background: var(--bg-hover); color: var(--text-primary); border-radius: 50%; font-size: 2rem; font-weight: bold; margin-bottom: 1rem; border: 2px solid var(--border-base);">
+          {{ item.username[:1]|upper }}
+        </span>
+        <h2 style="margin: 0.5rem 0 0.25rem 0; font-size: 1.5rem;">{{ item.username }}</h2>
+        <p style="color: var(--text-secondary); margin: 0 0 1rem 0; font-size: 0.9rem;">{{ item.email }}</p>
+        <span class="badge {{ 'success' if item.is_active_account else 'danger' }}" style="padding: 0.35rem 0.75rem; border-radius: 50px;">
+          {{ 'Active' if item.is_active_account else 'Disabled' }}
+        </span>
+      </div>
+      
+      <h3 style="font-size: 1.1rem; margin-bottom: 1rem;">Account Information</h3>
+      <table class="profile-info-table" style="width: 100%; border-collapse: collapse;">
+        <tbody>
+          <tr style="border-bottom: 1px solid var(--border-base);">
+            <td style="padding: 0.75rem 0; color: var(--text-secondary); font-size: 0.9rem;">Role</td>
+            <td style="padding: 0.75rem 0; text-align: right; font-weight: 500; font-size: 0.9rem;">
+              <span class="badge purple" style="padding: 0.2rem 0.5rem; border-radius: 4px;">{{ item.role|upper }}</span>
+            </td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--border-base);">
+            <td style="padding: 0.75rem 0; color: var(--text-secondary); font-size: 0.9rem;">Account Status</td>
+            <td style="padding: 0.75rem 0; text-align: right; font-weight: 500; font-size: 0.9rem;">{{ 'Active' if item.is_active_account else 'Disabled' }}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--border-base);">
+            <td style="padding: 0.75rem 0; color: var(--text-secondary); font-size: 0.9rem;">Registered</td>
+            <td style="padding: 0.75rem 0; text-align: right; font-weight: 500; font-size: 0.9rem;">{{ item.created_at.strftime('%d %b %Y') if item.created_at else '—' }}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--border-base);">
+            <td style="padding: 0.75rem 0; color: var(--text-secondary); font-size: 0.9rem;">Selected Domain</td>
+            <td style="padding: 0.75rem 0; text-align: right; font-weight: 500; font-size: 0.9rem;">{{ item.profile.preferred_domain if item.profile and item.profile.preferred_domain else '—' }}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--border-base);">
+            <td style="padding: 0.75rem 0; color: var(--text-secondary); font-size: 0.9rem;">Aptitude Sessions</td>
+            <td style="padding: 0.75rem 0; text-align: right; font-weight: 500; font-size: 0.9rem;">{{ item.mcq_sessions|length }}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--border-base);">
+            <td style="padding: 0.75rem 0; color: var(--text-secondary); font-size: 0.9rem;">Coding Assessments</td>
+            <td style="padding: 0.75rem 0; text-align: right; font-weight: 500; font-size: 0.9rem;">{{ item.coding_assessments|length }}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--border-base);">
+            <td style="padding: 0.75rem 0; color: var(--text-secondary); font-size: 0.9rem;">Resume Analyses</td>
+            <td style="padding: 0.75rem 0; text-align: right; font-weight: 500; font-size: 0.9rem;">{{ item.resume_analyses|length }}</td>
+          </tr>
+          <tr>
+            <td style="padding: 0.75rem 0; color: var(--text-secondary); font-size: 0.9rem;">Certificates</td>
+            <td style="padding: 0.75rem 0; text-align: right; font-weight: 500; font-size: 0.9rem;">{{ item.certificates|length }}</td>
+          </tr>
+        </tbody>
+      </table>
+      {% if item.id != current_user.id %}
+      <div style="margin-top: 1.5rem; display: flex; gap: 0.5rem;">
+        <form method="post" action="{{ url_for('admin_user_action',user_id=item.id,action='toggle') }}" style="flex: 1;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="btn btn-glass" style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-base); border-radius: var(--radius-sm); background: var(--bg-hover); color: var(--text-primary); cursor: pointer;">
+            {{ 'Disable Account' if item.is_active_account else 'Enable Account' }}
+          </button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+    
+    <!-- Right Side: History Cards -->
+    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+      <!-- Aptitude History -->
+      <div class="panel">
+        <h3 style="font-size: 1.1rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-base); padding-bottom: 0.5rem;">Aptitude History</h3>
+        <div class="table-wrap">
+          <table style="width: 100%; text-align: left; border-collapse: collapse;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--border-base); color: var(--text-secondary); font-size: 0.85rem;">
+                <th style="padding: 0.5rem;">Domain</th>
+                <th style="padding: 0.5rem; text-align: right;">Score</th>
+                <th style="padding: 0.5rem;">Date</th>
+                <th style="padding: 0.5rem;">Status</th>
+                <th style="padding: 0.5rem;">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for i in item.mcq_sessions %}
+              <tr style="border-bottom: 1px solid var(--border-base); font-size: 0.9rem;">
+                <td style="padding: 0.75rem 0.5rem; font-weight: 500;">{{ i.domain }}</td>
+                <td style="padding: 0.75rem 0.5rem; text-align: right; font-weight: bold; color: {{ '#16a34a' if i.score >= 80 else '#dc2626' }};">{{ i.score }}%</td>
+                <td style="padding: 0.75rem 0.5rem; color: var(--text-secondary);">{{ i.start_time.strftime('%d %b %Y') if i.start_time else '—' }}</td>
+                <td style="padding: 0.75rem 0.5rem;">
+                  <span class="badge {{ 'success' if i.score >= 80 else 'danger' }}">{{ 'Passed' if i.score >= 80 else 'Retake' }}</span>
+                </td>
+                <td style="padding: 0.75rem 0.5rem;">
+                  <a href="{{ url_for('admin_interview_detail',kind='mcq',item_id=i.id) }}">Inspect</a>
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="5" class="empty" style="text-align: center; padding: 1.5rem 0; color: var(--text-secondary);">No aptitude assessments recorded.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Coding Round History -->
+      <div class="panel">
+        <h3 style="font-size: 1.1rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-base); padding-bottom: 0.5rem;">Coding Round History</h3>
+        <div class="table-wrap">
+          <table style="width: 100%; text-align: left; border-collapse: collapse;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--border-base); color: var(--text-secondary); font-size: 0.85rem;">
+                <th style="padding: 0.5rem;">Domain</th>
+                <th style="padding: 0.5rem;">Solved</th>
+                <th style="padding: 0.5rem; text-align: right;">Score</th>
+                <th style="padding: 0.5rem;">Date</th>
+                <th style="padding: 0.5rem;">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for c in item.coding_assessments %}
+              <tr style="border-bottom: 1px solid var(--border-base); font-size: 0.9rem;">
+                <td style="padding: 0.75rem 0.5rem; font-weight: 500;">{{ c.domain }}</td>
+                <td style="padding: 0.75rem 0.5rem;">{{ c.questions_solved }}/{{ c.total_questions }}</td>
+                <td style="padding: 0.75rem 0.5rem; text-align: right; font-weight: bold; color: {{ '#16a34a' if c.overall_score >= 70 else '#d97706' }};">{{ c.overall_score|round(1) }}%</td>
+                <td style="padding: 0.75rem 0.5rem; color: var(--text-secondary);">{{ c.submitted_at.strftime('%d %b %Y') if c.submitted_at else '—' }}</td>
+                <td style="padding: 0.75rem 0.5rem;">
+                  <a href="{{ url_for('admin_coding_detail',item_id=c.id) }}">Inspect</a>
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="5" class="empty" style="text-align: center; padding: 1.5rem 0; color: var(--text-secondary);">No coding assessments recorded.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+      <!-- Resume History -->
+      <div class="panel">
+        <h3 style="font-size: 1.1rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-base); padding-bottom: 0.5rem;">Resume History</h3>
+        <div class="table-wrap">
+          <table style="width: 100%; text-align: left; border-collapse: collapse;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--border-base); color: var(--text-secondary); font-size: 0.85rem;">
+                <th style="padding: 0.5rem;">Job Role</th>
+                <th style="padding: 0.5rem; text-align: right;">ATS Score</th>
+                <th style="padding: 0.5rem;">Date</th>
+                <th style="padding: 0.5rem;">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in item.resume_analyses %}
+              <tr style="border-bottom: 1px solid var(--border-base); font-size: 0.9rem;">
+                <td style="padding: 0.75rem 0.5rem; font-weight: 500;">{{ r.job_role or 'General Analysis' }}</td>
+                <td style="padding: 0.75rem 0.5rem; text-align: right; font-weight: bold; color: {{ '#16a34a' if (r.ats_score or 0) >= 80 else '#d97706' }};">{{ r.ats_score|round(1) }}%</td>
+                <td style="padding: 0.75rem 0.5rem; color: var(--text-secondary);">{{ r.created_at.strftime('%d %b %Y') if r.created_at else '—' }}</td>
+                <td style="padding: 0.75rem 0.5rem;">
+                  <a href="{{ url_for('admin_resume_detail',item_id=r.id) }}">View Report</a>
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="4" class="empty" style="text-align: center; padding: 1.5rem 0; color: var(--text-secondary);">No resume history yet.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Certificates History -->
+      <div class="panel">
+        <h3 style="font-size: 1.1rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-base); padding-bottom: 0.5rem;">Certificates</h3>
+        <div class="table-wrap">
+          <table style="width: 100%; text-align: left; border-collapse: collapse;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--border-base); color: var(--text-secondary); font-size: 0.85rem;">
+                <th style="padding: 0.5rem;">Certificate ID</th>
+                <th style="padding: 0.5rem;">Domain</th>
+                <th style="padding: 0.5rem;">Issue Date</th>
+                <th style="padding: 0.5rem;">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for cert in item.certificates %}
+              <tr style="border-bottom: 1px solid var(--border-base); font-size: 0.9rem;">
+                <td style="padding: 0.75rem 0.5rem;"><code style="color: #4f46e5;">{{ cert.certificate_id }}</code></td>
+                <td style="padding: 0.75rem 0.5rem; font-weight: 500;">{{ cert.domain }}</td>
+                <td style="padding: 0.75rem 0.5rem; color: var(--text-secondary);">{{ cert.issue_date.strftime('%d %b %Y') if cert.issue_date else '—' }}</td>
+                <td style="padding: 0.75rem 0.5rem;">
+                  <a href="{{ url_for('view_certificate',certificate_id=cert.certificate_id) }}" target="_blank">View ↗</a>
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="4" class="empty" style="text-align: center; padding: 1.5rem 0; color: var(--text-secondary);">No certificates issued yet.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% elif section=='interview-detail' %}
+  <a href="{{ url_for('admin_interviews') }}" class="back-link" style="display: inline-block; margin-bottom: 1rem; text-decoration: none;">← Back to interviews</a>
+  <section class="panel">
+    {% if kind=='mcq' %}
+    <span class="eyebrow">INTERVIEW #MCQ-{{ item.id }}</span>
+    <h2 style="font-size: 1.5rem; margin-top: 0.25rem; margin-bottom: 1rem;">{{ item.domain }}</h2>
+    <dl class="admin-profile-card dl" style="display: grid; grid-template-columns: 150px 1fr; margin-bottom: 1.5rem;">
+      <dt style="padding: 0.5rem 0; color: var(--text-secondary);">Candidate</dt><dd style="padding: 0.5rem 0; font-weight: 500;">{{ item.user.username }} · {{ item.user.email }}</dd>
+      <dt style="padding: 0.5rem 0; color: var(--text-secondary);">Difficulty</dt><dd style="padding: 0.5rem 0; font-weight: 500;">{{ item.difficulty }}</dd>
+      <dt style="padding: 0.5rem 0; color: var(--text-secondary);">Score</dt><dd style="padding: 0.5rem 0; font-weight: bold; color: var(--color-primary);">{{ item.score }}%</dd>
+      <dt style="padding: 0.5rem 0; color: var(--text-secondary);">Performance</dt><dd style="padding: 0.5rem 0; font-weight: 500;">{{ item.correct_answers }} correct / {{ item.wrong_answers }} incorrect</dd>
+      <dt style="padding: 0.5rem 0; color: var(--text-secondary);">Duration</dt><dd style="padding: 0.5rem 0; font-weight: 500;">{{ item.time_taken_seconds }} seconds</dd>
+    </dl>
+    <h3 style="font-size: 1.1rem; border-bottom: 1px solid var(--border-base); padding-bottom: 0.5rem; margin-bottom: 1rem;">Questions and answers</h3>
+    {% for a in item.attempts %}
+    <article class="question" style="padding: 1rem; border: 1px solid var(--border-base); border-radius: var(--radius-sm); margin-bottom: 1rem; background: var(--bg-hover);">
+      <span class="badge {{ 'success' if a.is_correct else 'danger' }}" style="margin-bottom: 0.5rem;">{{ 'Correct' if a.is_correct else 'Incorrect' }}</span>
+      <h4 style="margin: 0.5rem 0; font-size: 1rem;">{{ a.question_text }}</h4>
+      <p style="margin: 0.25rem 0; font-size: 0.9rem;"><b>Candidate:</b> {{ a.user_answer or 'Skipped' }}</p>
+      <p style="margin: 0.25rem 0; font-size: 0.9rem;"><b>Correct:</b> {{ a.correct_option }}</p>
+      {% if a.explanation %}
+      <p style="margin: 0.5rem 0 0 0; font-size: 0.85rem; color: var(--text-secondary); border-top: 1px dashed var(--border-base); padding-top: 0.5rem;">{{ a.explanation }}</p>
+      {% endif %}
+    </article>
+    {% endfor %}
+    {% else %}
+    <span class="eyebrow">AI INTERVIEW #{{ item.id }}</span>
+    <h2 style="font-size: 1.5rem; margin-top: 0.25rem; margin-bottom: 1rem;">{{ item.role }}</h2>
+    <dl class="admin-profile-card dl" style="display: grid; grid-template-columns: 150px 1fr; margin-bottom: 1.5rem;">
+      <dt style="padding: 0.5rem 0; color: var(--text-secondary);">Candidate</dt><dd style="padding: 0.5rem 0; font-weight: 500;">{{ item.user.username }}</dd>
+      <dt style="padding: 0.5rem 0; color: var(--text-secondary);">Experience</dt><dd style="padding: 0.5rem 0; font-weight: 500;">{{ item.experience }}</dd>
+      <dt style="padding: 0.5rem 0; color: var(--text-secondary);">Type</dt><dd style="padding: 0.5rem 0; font-weight: 500;">{{ item.interview_type }}</dd>
+      <dt style="padding: 0.5rem 0; color: var(--text-secondary);">Status</dt><dd style="padding: 0.5rem 0; font-weight: 500;"><span class="badge {{ 'success' if item.status=='completed' else 'muted' }}">{{ item.status|upper }}</span></dd>
+      <dt style="padding: 0.5rem 0; color: var(--text-secondary);">Score</dt><dd style="padding: 0.5rem 0; font-weight: bold; color: var(--color-primary);">{{ item.report.overall_score if item.report else '—' }}</dd>
+    </dl>
+    <h3 style="font-size: 1.1rem; border-bottom: 1px solid var(--border-base); padding-bottom: 0.5rem; margin-bottom: 1rem;">Questions and feedback</h3>
+    {% for q in item.questions %}
+    <article class="question" style="padding: 1rem; border: 1px solid var(--border-base); border-radius: var(--radius-sm); margin-bottom: 1rem; background: var(--bg-hover);">
+      <h4 style="margin: 0 0 0.5rem 0; font-size: 1rem;">{{ q.question_text }}</h4>
+      <p style="margin: 0.25rem 0; font-size: 0.9rem;"><b>Answer:</b> {{ q.answer_text or 'No answer' }}</p>
+      {% if q.feedback %}
+      <p style="margin: 0.5rem 0 0 0; font-size: 0.85rem; color: var(--text-secondary); border-top: 1px dashed var(--border-base); padding-top: 0.5rem;"><b>Feedback:</b> {{ q.feedback }}</p>
+      {% endif %}
+    </article>
+    {% else %}
+    <p class="empty" style="text-align: center; padding: 2rem 0; color: var(--text-secondary);">No questions stored.</p>
+    {% endfor %}
+    {% endif %}
+  </section>
+
+  {% elif section=='resume-detail' %}
+  <a href="{{ url_for('admin_resumes') }}" class="back-link" style="display: inline-block; margin-bottom: 1rem; text-decoration: none;">← Back to resume analyses</a>
+  <section class="panel">
+    <span class="eyebrow">RESUME ANALYSIS #{{ item.id }}</span>
+    <h2 style="font-size: 1.5rem; margin-top: 0.25rem; margin-bottom: 1rem;">{{ item.user.username }}</h2>
+    <dl class="admin-profile-card dl" style="display: grid; grid-template-columns: 150px 1fr; margin-bottom: 1.5rem;">
+      <dt style="padding: 0.5rem 0; color: var(--text-secondary);">Job role</dt><dd style="padding: 0.5rem 0; font-weight: 500;">{{ item.job_role or 'Not specified' }}</dd>
+      <dt style="padding: 0.5rem 0; color: var(--text-secondary);">ATS score</dt><dd style="padding: 0.5rem 0; font-weight: bold; color: var(--color-primary);">{{ item.ats_score if item.ats_score is not none else 'Not provided' }}%</dd>
+      <dt style="padding: 0.5rem 0; color: var(--text-secondary);">Date</dt><dd style="padding: 0.5rem 0; font-weight: 500;">{{ item.created_at.strftime('%d %b %Y, %H:%M') if item.created_at else '—' }}</dd>
+      <dt style="padding: 0.5rem 0; color: var(--text-secondary);">Status</dt><dd style="padding: 0.5rem 0; font-weight: 500;"><span class="badge success">{{ item.status }}</span></dd>
+    </dl>
+    <h3 style="font-size: 1.1rem; border-bottom: 1px solid var(--border-base); padding-bottom: 0.5rem; margin-bottom: 1rem;">Generated analysis</h3>
+    <pre style="white-space: pre-wrap; font-family: monospace; font-size: 0.85rem; background: var(--bg-hover); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-base); overflow-x: auto;">{{ analysis|tojson(indent=2) }}</pre>
+  </section>
+
+  {% elif section=='email-logs' %}<section class="panel"><div class="panel-head"><h2>Email delivery logs</h2></div><div class="table-wrap"><table><thead><tr><th>Recipient</th><th>Type</th><th>Date</th><th>Status</th><th>Error</th></tr></thead><tbody>{% for e in email_logs %}<tr><td>{{ e.recipient }}</td><td>{{ e.email_type }}</td><td>{{ e.created_at }}</td><td>{{ e.status }}</td><td>{{ e.error or '—' }}</td></tr>{% else %}<tr><td colspan="5" class="empty">No email logs.</td></tr>{% endfor %}</tbody></table></div></section>
+  {% elif section=='logs' %}<section class="panel"><div class="panel-head"><h2>Audit logs</h2></div><div class="table-wrap"><table><thead><tr><th>Time</th><th>Admin</th><th>Action</th><th>Target</th><th>Status</th></tr></thead><tbody>{% for l in audit_logs %}<tr><td>{{ l.created_at }}</td><td>{{ l.admin.email if l.admin else 'System' }}</td><td>{{ l.action }}</td><td>{{ l.target or '—' }}</td><td>{{ l.status }}</td></tr>{% endfor %}</tbody></table></div></section>{% endif %}
+</main><script src="{{ url_for('static',filename='js/admin.js') }}"></script></body></html>

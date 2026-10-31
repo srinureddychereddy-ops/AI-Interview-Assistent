@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        (function () {
+            localStorage.removeItem('interviewai-theme');
+            document.documentElement.dataset.theme = 'light';
+        })();
+        function handleAvatarError(image) {
+            if (!image || image.dataset.fallbackAttempted === 'true') {
+                if (image) {
+                    image.onerror = null;
+                    const fallback = document.createElement('span');
+                    fallback.className = (image.className || '') + ' avatar-initial';
+                    fallback.setAttribute('role', 'img');
+                    fallback.setAttribute('aria-label', image.alt || 'User avatar');
+                    fallback.textContent = (image.dataset.initial || '?').slice(0, 1).toUpperCase();
+                    image.replaceWith(fallback);
+                }
+                return;
+            }
+            image.dataset.fallbackAttempted = 'true';
+            image.src = "{{ url_for('static', filename='uploads/profile/default.png') }}";
+        }
+    </script>
+    <title>{% block title %}AI Interview Assistant{% endblock %}</title>
+    <meta name="description" content="AI-powered interview preparation platform — MCQ assessments, coding rounds, ATS resume analysis, and performance analytics.">
+
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- Google Fonts — Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <!-- Core Design System -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <!-- Loader -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/loader.css') }}">
+
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body data-endpoint="{{ request.endpoint or 'page' }}" class="{% if request.endpoint in ['landing','login','register','forgot_password','verify_otp','reset_password','password_reset_success','coding_assessment'] %}immersive-layout{% elif current_user.is_authenticated %}authenticated-saas{% endif %}">
+    <!-- Global AI Loader -->
+    {% include "loader.html" %}
+
+    <button class="theme-toggle-floating" id="themeToggleFloating" type="button" aria-label="Switch color theme" aria-pressed="false">
+        <i class="bi bi-moon-stars" aria-hidden="true"></i>
+    </button>
+
+    {% if current_user.is_authenticated %}
+    <div class="workspace-aurora" aria-hidden="true"></div>
+    <div class="workspace-ambient" aria-hidden="true"><span></span><span></span><span></span></div>
+    <div class="saas-toast-portal" id="saasToastPortal" aria-live="polite" aria-atomic="true"></div>
+    <div hidden>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}<span data-saas-flash data-category="{{ category }}">{{ message }}</span>{% endfor %}
+        {% endwith %}
+    </div>
+    {% endif %}
+
+    <!-- Mobile Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+    <!-- ================================================================
+         APP LAYOUT
+    ================================================================ -->
+    <div class="app-layout">
+
+        <!-- ============================================================
+             PREMIUM SIDEBAR
+        ============================================================ -->
+        <aside class="sidebar-wrapper" id="sidebar">
+
+            <!-- Brand -->
+            <a href="{{ url_for('dashboard') }}" class="sidebar-brand">
+                <div class="brand-icon">
+                    <i class="bi bi-cpu-fill"></i>
+                </div>
+                <span class="brand-text">Interview.ai</span>
+                <span class="brand-plan">PRO</span>
+            </a>
+
+            <!-- Navigation -->
+            <nav class="sidebar-nav">
+
+                <!-- Platform Group -->
+                <span class="nav-group-label">Platform</span>
+
+                <a href="{{ url_for('dashboard') }}"
+                   class="nav-item {% if request.endpoint == 'dashboard' %}active{% endif %}">
+                    <i class="bi bi-grid-1x2-fill"></i>
+                    <span class="nav-item-text">Dashboard</span>
+                </a>
+
+                <a href="{{ url_for('resume_analyzer') }}"
+                   class="nav-item {% if request.endpoint in ['resume_analyzer','resume_upload'] %}active{% endif %}">
+                    <i class="bi bi-file-earmark-person-fill"></i>
+                    <span class="nav-item-text">Resume Analyzer</span>
+                </a>
+
+                <a href="{{ url_for('aptitude') }}"
+                   class="nav-item {% if request.endpoint in ['aptitude','interview_assessment','interview_setup','interview'] %}active{% endif %} {% if not can_start_aptitude_flag %}nav-item-locked{% endif %}"
+                   {% if not can_start_aptitude_flag %}title="Aptitude Round Locked — Minimum 80% ATS score required"{% endif %}>
+                    <i class="bi {% if can_start_aptitude_flag %}bi-award-fill{% else %}bi-lock-fill text-warning{% endif %}"></i>
+                    <span class="nav-item-text">Aptitude Round</span>
+                    {% if not can_start_aptitude_flag %}
+                    <span class="badge bg-warning-subtle text-warning ms-auto font-monospace" style="font-size: 0.65rem;">Locked</span>
+                    {% endif %}
+                </a>
+
+                <a href="{{ url_for('coding_setup') }}"
+                   class="nav-item {% if request.endpoint in ['coding_setup','coding_assessment','select_coding_domain','coding_round'] %}active{% endif %} {% if not can_start_coding_flag %}nav-item-locked{% endif %}"
+                   {% if not can_start_coding_flag %}title="Coding Round Locked — Minimum 80% ATS and 80% Aptitude score required"{% endif %}>
+                    <span class="nav-icon-wrap">
+                        <i class="bi bi-code-slash"></i>
+                        {% if not can_start_coding_flag %}
+                        <i class="bi bi-lock-fill nav-lock-indicator text-warning" aria-hidden="true"></i>
+                        {% endif %}
+                    </span>
+                    <span class="nav-item-text">Coding Round</span>
+                    {% if not can_start_coding_flag %}
+                    <span class="badge bg-warning-subtle text-warning ms-auto font-monospace" style="font-size: 0.65rem;">Locked</span>
+                    {% endif %}
+                </a>
+
+                <hr class="nav-divider">
+                <span class="nav-group-label">Analytics</span>
+
+                <a href="{{ url_for('reports') }}"
+                   class="nav-item {% if request.endpoint == 'reports' %}active{% endif %}">
+                    <i class="bi bi-bar-chart-line-fill"></i>
+                    <span class="nav-item-text">Analytics</span>
+                </a>
+
+                <a href="{{ url_for('history') }}"
+                   class="nav-item {% if request.endpoint in ['history','view_mcq_report'] %}active{% endif %}">
+                    <i class="bi bi-clock-history"></i>
+                    <span class="nav-item-text">History</span>
+                </a>
+
+                <hr class="nav-divider">
+                <span class="nav-group-label">Account</span>
+
+                <a href="{{ url_for('profile_view') }}"
+                   class="nav-item {% if request.endpoint == 'profile_view' %}active{% endif %}">
+                    <i class="bi bi-person-fill"></i>
+                    <span class="nav-item-text">Profile</span>
+                </a>
+
+                <a href="{{ url_for('profile_edit') }}"
+                   class="nav-item {% if request.endpoint == 'profile_edit' %}active{% endif %}">
+                    <i class="bi bi-sliders2"></i>
+                    <span class="nav-item-text">Settings</span>
+                </a>
+
+            </nav>
+
+            <!-- Sidebar Footer -->
+            <div class="sidebar-footer">
+                {% if current_user.is_authenticated %}
+                <div class="d-flex align-items-center gap-2 px-1 mb-2">
+                    <img src="{{ url_for('static', filename='uploads/profile/' + (current_user.profile.profile_image_filename if current_user.profile and current_user.profile.profile_image_filename else 'default.png')) }}"
+                         alt="{{ current_user.username }}"
+                         class="avatar-img"
+                         style="width:32px;height:32px;"
+                         data-initial="{{ current_user.username[:1] }}"
+                         onerror="handleAvatarError(this)">
+                    <div class="overflow-hidden">
+                        <p class="mb-0 fw-semibold text-truncate" style="font-size:0.8rem;color:var(--text-primary);max-width:145px;">
+                            {{ (current_user.profile.first_name if current_user.profile else None) or current_user.username }}
+                        </p>
+                        <p class="mb-0 text-truncate" style="font-size:0.7rem;color:var(--text-muted);max-width:145px;">
+                            {{ current_user.email }}
+                        </p>
+                    </div>
+                </div>
+                <a href="{{ url_for('logout') }}" class="nav-item nav-danger" style="margin:0;">
+                    <i class="bi bi-box-arrow-left"></i>
+                    <span class="nav-item-text">Logout</span>
+                </a>
+                {% endif %}
+            </div>
+
+        </aside>
+
+        <!-- ============================================================
+             MAIN WORKSPACE
+        ============================================================ -->
+        <div class="main-workspace">
+
+            <!-- Top Navbar -->
+            <header class="top-navbar">
+                <div class="navbar-left">
+                    <!-- Mobile hamburger -->
+                    <button class="btn-navbar-icon d-lg-none" onclick="toggleSidebar()" aria-label="Toggle sidebar">
+                        <i class="bi bi-list"></i>
+                    </button>
+
+                    <!-- Breadcrumb -->
+                    <nav class="breadcrumb-nav d-none d-md-flex" aria-label="breadcrumb">
+                        <span>Interview.ai</span>
+                        <span class="bc-sep">/</span>
+                        <span class="bc-current">
+                            {% if request.endpoint == 'dashboard' %}Dashboard
+                            {% elif request.endpoint in ['resume_analyzer','resume_upload'] %}Resume Analyzer
+                            {% elif request.endpoint in ['interview_assessment','interview_setup','interview'] %}Interview Practice
+                            {% elif request.endpoint in ['coding_setup','coding_assessment','select_coding_domain','coding_round'] %}Coding Round
+                            {% elif request.endpoint == 'reports' %}Analytics
+                            {% elif request.endpoint in ['history','view_mcq_report'] %}History
+                            {% elif request.endpoint == 'profile_view' %}Profile
+                            {% elif request.endpoint == 'profile_edit' %}Settings
+                            {% else %}{{ (request.endpoint or 'Page') | replace('_', ' ') | title }}
+                            {% endif %}
+                        </span>
+                    </nav>
+                </div>
+
+                <div class="navbar-right">
+                    <button class="saas-command-trigger d-none d-md-flex" id="saasCommandTrigger" type="button" aria-label="Open quick navigation">
+                        <i class="bi bi-search"></i><span>Quick navigation</span><kbd>Ctrl K</kbd>
+                    </button>
+                    <button class="btn-navbar-icon theme-toggle" id="themeToggle" type="button" aria-label="Switch color theme" aria-pressed="false">
+                        <i class="bi bi-moon-stars" aria-hidden="true"></i>
+                    </button>
+                    <div class="dropdown navbar-notification-dropdown">
+                        <button class="btn-navbar-icon notification-button" type="button" aria-label="Open notifications" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-bell"></i><span aria-hidden="true"></span>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end product-notification-menu">
+                            <header><div><small>WORKSPACE</small><strong>Notifications</strong></div><span>All caught up</span></header>
+                            <div class="notification-zero"><i class="bi bi-check2-circle"></i><div><b>You’re up to date</b><small>New preparation insights will appear here.</small></div></div>
+                            <a href="{{ url_for('profile_edit') }}">Manage notifications <i class="bi bi-arrow-right"></i></a>
+                        </div>
+                    </div>
+
+                    <!-- User dropdown -->
+                    {% if current_user.is_authenticated %}
+                    <div class="dropdown">
+                        <a href="#" class="user-dropdown-toggle text-decoration-none dropdown-toggle"
+                           id="dropdownUser" data-bs-toggle="dropdown" aria-expanded="false">
+                            <img src="{{ url_for('static', filename='uploads/profile/' + (current_user.profile.profile_image_filename if current_user.profile and current_user.profile.profile_image_filename else 'default.png')) }}"
+                                 alt="{{ current_user.username }}"
+                                 class="avatar-img"
+                                 data-initial="{{ current_user.username[:1] }}"
+                                 onerror="handleAvatarError(this)">
+                            <span class="user-name d-none d-sm-inline">
+                                {{ (current_user.profile.first_name if current_user.profile else None) or current_user.username }}
+                            </span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownUser">
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('profile_view') }}">
+                                    <i class="bi bi-person-circle"></i> My Profile
+                                </a>
+                            </li>
+                            <li><a class="dropdown-item" href="{{ url_for('profile_edit') }}"><i class="bi bi-sliders2"></i> Workspace Settings</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item text-danger" href="{{ url_for('logout') }}">
+                                    <i class="bi bi-box-arrow-right"></i> Logout
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <main class="content-body">
+                {% block content %}{% endblock %}
+            </main>
+
+        </div><!-- /.main-workspace -->
+    </div><!-- /.app-layout -->
+
+    {% if current_user.is_authenticated %}
+    <div class="saas-command" id="saasCommand" hidden>
+        <button class="saas-command-backdrop" type="button" aria-label="Close quick navigation"></button>
+        <section class="saas-command-panel" role="dialog" aria-modal="true" aria-labelledby="saasCommandTitle">
+            <div class="saas-command-search">
+                <i class="bi bi-stars" aria-hidden="true"></i>
+                <label class="visually-hidden" for="saasCommandInput" id="saasCommandTitle">Quick navigation</label>
+                <input id="saasCommandInput" type="search" autocomplete="off" placeholder="Where would you like to go?">
+                <kbd>Esc</kbd>
+            </div>
+            <nav class="saas-command-links" aria-label="Quick navigation results">
+                <a href="{{ url_for('dashboard') }}" data-command-label="Dashboard overview"><i class="bi bi-grid-1x2-fill"></i><span><b>Dashboard</b><small>Your performance overview</small></span></a>
+                <a href="{{ url_for('resume_analyzer') }}" data-command-label="Resume analyzer ATS"><i class="bi bi-file-earmark-person-fill"></i><span><b>Resume Analyzer</b><small>Analyze ATS and skill alignment</small></span></a>
+                <a href="{{ url_for('interview_assessment') }}" data-command-label="Interview practice assessment"><i class="bi bi-mic-fill"></i><span><b>Interview Practice</b><small>Start an adaptive assessment</small></span></a>
+                <a href="{{ url_for('coding_setup') }}" data-command-label="Coding round assessment"><i class="bi bi-terminal-fill"></i><span><b>Coding Round</b><small>Problem-solving challenge setup</small></span></a>
+                <a href="{{ url_for('reports') }}" data-command-label="Analytics reports performance"><i class="bi bi-graph-up-arrow"></i><span><b>Analytics</b><small>Explore scores and progress</small></span></a>
+                <a href="{{ url_for('history') }}" data-command-label="History sessions"><i class="bi bi-clock-history"></i><span><b>History</b><small>Review previous sessions</small></span></a>
+                <a href="{{ url_for('profile_edit') }}" data-command-label="Settings profile account"><i class="bi bi-sliders2"></i><span><b>Settings</b><small>Manage your profile preferences</small></span></a>
+            </nav>
+            <p class="saas-command-empty" hidden>No matching workspace found.</p>
+        </section>
+    </div>
+    {% endif %}
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/loader.js') }}"></script>
+
+    <script>
+        // ── Sidebar Toggle (Mobile) ──────────────────────
+        function toggleSidebar() {
+            document.getElementById('sidebar')?.classList.toggle('show');
+            document.getElementById('sidebarOverlay')?.classList.toggle('show');
+        }
+        function closeSidebar() {
+            document.getElementById('sidebar')?.classList.remove('show');
+            document.getElementById('sidebarOverlay')?.classList.remove('show');
+        }
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') closeSidebar();
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+    {% block extra_css_js %}{% endblock %}
+</body>
+</html>

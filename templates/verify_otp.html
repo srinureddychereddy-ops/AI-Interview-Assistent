@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Verify Email — Interview.ai{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">{% endblock %}
+
+{% block content %}
+<div class="auth-page-body" data-auth-page="verify-otp">
+    <div class="auth-grid" aria-hidden="true"></div><div class="auth-blob auth-blob-one" aria-hidden="true"></div><div class="auth-blob auth-blob-two" aria-hidden="true"></div>
+    <header class="auth-topbar">
+        <a class="auth-brand" href="{{ url_for('landing') }}" aria-label="Interview.ai home"><span class="auth-brand-mark"><i class="bi bi-stars" aria-hidden="true"></i></span><span>Interview.ai</span></a>
+        <a class="auth-toplink" href="{{ url_for('forgot_password') }}"><i class="bi bi-arrow-left" aria-hidden="true"></i> Change email</a>
+    </header>
+
+    <main class="auth-main">
+        <div class="auth-layout auth-layout-centered">
+            <section class="auth-panel" id="authPanel" aria-labelledby="otpTitle">
+                <div class="auth-icon auth-email-icon" aria-hidden="true"><i class="bi bi-envelope-paper-heart"></i></div>
+                <div class="auth-heading">
+                    <h1 id="otpTitle">Check your inbox</h1>
+                    <p>We sent a six-digit verification code to <strong>{{ email }}</strong>. Enter it below to continue.</p>
+                </div>
+
+                <form class="auth-form" method="POST" action="{{ url_for('verify_otp') }}" id="otpForm" data-otp-form novalidate>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <div class="otp-inputs" role="group" aria-label="Six-digit verification code">
+                        {% for index in range(1, 7) %}
+                        <input class="otp-box" type="text" name="otp_digit{{ index }}" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="{% if index == 1 %}one-time-code{% else %}off{% endif %}" aria-label="Digit {{ index }}" required>
+                        {% endfor %}
+                    </div>
+                    <div class="otp-actions">
+                        <span>Code expires in 5 minutes</span>
+                        <span class="otp-timer" data-otp-countdown="60">Resend in 01:00</span>
+                        <button class="otp-resend" type="button" data-otp-resend hidden>Resend code</button>
+                    </div>
+                    <button class="auth-button" type="submit" data-auth-submit><span data-button-label>Verify and continue</span><i class="bi bi-shield-check" aria-hidden="true"></i></button>
+                </form>
+
+                <form method="POST" action="{{ url_for('resend_otp') }}" id="authResendForm" hidden>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                </form>
+                <p class="auth-fineprint"><i class="bi bi-lock" aria-hidden="true"></i> Never share this code with anyone, including Interview.ai support.</p>
+
+                <div class="auth-loading-overlay" data-otp-success aria-hidden="true">
+                    <div class="auth-loading-card"><div class="success-check"><i class="bi bi-check-lg"></i></div><strong>Email verified</strong><br><span>Taking you to password reset…</span></div>
+                </div>
+            </section>
+        </div>
+    </main>
+    <div class="toast-portal" id="toastPortal" aria-live="polite" aria-atomic="true"></div>
+    <div hidden>{% with messages = get_flashed_messages(with_categories=true) %}{% for category, message in messages %}<span data-auth-flash data-category="{{ category }}">{{ message }}</span>{% endfor %}{% endwith %}</div>
+</div>
+{% endblock %}

@@ -1,0 +1,369 @@
+{% extends "base.html" %}
+
+{% block title %}Coding Assessment Report — Interview.ai{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/coding.css') }}">
+<style>
+.report-hero-card {
+    background: #ffffff;
+    border: 1px solid var(--border-base, #e2e8f0);
+    border-radius: var(--radius-xl, 20px);
+    padding: 2rem;
+    box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+    margin-bottom: 2rem;
+}
+
+.score-badge-circle {
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle, #ffffff 60%, rgba(37, 99, 235, 0.06) 100%);
+    border: 5px solid {% if assessment.overall_score >= 80 %}#10b981{% elif assessment.overall_score >= 50 %}#3b82f6{% else %}#f59e0b{% endif %};
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+    flex-shrink: 0;
+}
+
+.score-num {
+    font-size: 2.5rem;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--text-primary, #0f172a);
+}
+
+.score-max {
+    font-size: 0.85rem;
+    color: var(--text-muted, #64748b);
+    font-weight: 600;
+}
+
+.perf-metric-tile {
+    background: #f8fafc;
+    border: 1px solid var(--border-base, #e2e8f0);
+    border-radius: var(--radius-md, 12px);
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.perf-metric-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: var(--radius-sm, 10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.perf-metric-icon.blue { background: rgba(37, 99, 235, 0.1); color: #2563eb; }
+.perf-metric-icon.green { background: rgba(16, 185, 129, 0.1); color: #059669; }
+.perf-metric-icon.orange { background: rgba(245, 158, 11, 0.1); color: #d97706; }
+.perf-metric-icon.purple { background: rgba(124, 58, 237, 0.1); color: #7c3aed; }
+
+.question-report-card {
+    background: #ffffff;
+    border: 1px solid var(--border-base, #e2e8f0);
+    border-radius: var(--radius-lg, 16px);
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.question-report-card:hover {
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+}
+
+.question-report-card.status-solved {
+    border-left: 5px solid #10b981;
+}
+
+.question-report-card.status-partial {
+    border-left: 5px solid #f59e0b;
+}
+
+.question-report-card.status-unsolved {
+    border-left: 5px solid #ef4444;
+}
+
+.code-snippet-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-sm, 8px);
+    padding: 1rem;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: #1e293b;
+    max-height: 380px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+    <!-- Top Breadcrumb & Actions -->
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1 small font-monospace">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}" class="text-decoration-none text-muted">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('coding_setup') }}" class="text-decoration-none text-muted">Coding Round</a></li>
+                    <li class="breadcrumb-item active text-primary" aria-current="page">Assessment Report #{{ assessment.id }}</li>
+                </ol>
+            </nav>
+            <h1 class="h3 fw-bold text-main mb-0">Coding Assessment Complete</h1>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ url_for('coding_setup') }}" class="btn btn-outline-primary rounded-pill px-3 py-2 font-monospace small fw-semibold">
+                <i class="bi bi-arrow-repeat me-1"></i>New Coding Challenge
+            </a>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary rounded-pill px-3.5 py-2 font-monospace small fw-semibold">
+                <i class="bi bi-house me-1"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    {% set has_infra_err = false %}
+    {% for r in results %}
+        {% if r.is_infrastructure_error or r.status == 'Execution Unavailable' %}
+            {% set has_infra_err = true %}
+        {% endif %}
+    {% endfor %}
+    {% if has_infra_err %}
+    <div class="alert alert-warning border-warning d-flex align-items-center gap-3 rounded-4 p-3 mb-4 shadow-sm" role="alert">
+        <i class="bi bi-exclamation-triangle-fill fs-3 text-warning flex-shrink-0"></i>
+        <div>
+            <h5 class="alert-heading fw-bold mb-1">Execution Sandbox Notice</h5>
+            <p class="mb-0 small text-muted">One or more solutions could not be evaluated because the local Docker execution engine was unreachable or experienced a host delay. Your code was preserved. You can re-run the assessment with Docker active to receive full verified evaluation.</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 1. HERO REPORT SUMMARY -->
+    <div class="report-hero-card">
+        <div class="row align-items-center g-4">
+            <!-- Left: Overall Score Gauge -->
+            <div class="col-12 col-md-auto text-center text-md-start">
+                <div class="d-flex flex-column align-items-center">
+                    <div class="score-badge-circle mb-2">
+                        <span class="score-num">{{ assessment.overall_score|round|int }}</span>
+                        <span class="score-max">/ 100</span>
+                    </div>
+                    <span class="badge {% if has_infra_err and assessment.overall_score < 50 %}bg-secondary-subtle text-secondary{% elif assessment.overall_score >= 80 %}bg-success-subtle text-success{% elif assessment.overall_score >= 50 %}bg-primary-subtle text-primary{% else %}bg-warning-subtle text-warning{% endif %} font-monospace px-3 py-1">
+                        {% if has_infra_err and assessment.overall_score < 50 %}UNVERIFIED{% elif assessment.overall_score >= 80 %}EXCELLENT{% elif assessment.overall_score >= 50 %}COMPETENT{% else %}NEEDS PRACTICE{% endif %}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Middle: Assessment Metadata -->
+            <div class="col-12 col-md">
+                <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+                    <span class="badge bg-light text-muted border font-monospace">{{ assessment.role }}</span>
+                    <span class="badge bg-light text-muted border font-monospace">{{ assessment.domain }}</span>
+                    <span class="badge {% if assessment.difficulty|lower == 'easy' %}bg-success-subtle text-success{% elif assessment.difficulty|lower == 'hard' %}bg-danger-subtle text-danger{% else %}bg-warning-subtle text-warning{% endif %} font-monospace">
+                        {{ assessment.difficulty }}
+                    </span>
+                    <span class="badge bg-light text-muted border font-monospace">
+                        <i class="bi bi-filetype-py me-1 text-primary"></i>{{ assessment.language }}
+                    </span>
+                </div>
+                <h2 class="h4 fw-bold text-main mb-2">Assessment Performance Summary</h2>
+                <p class="text-muted small mb-3" style="line-height: 1.6;">
+                    Assessment evaluated on <strong>{{ assessment.submitted_at.strftime('%B %d, %Y at %H:%M UTC') }}</strong>.
+                    Solutions tested in isolated containerized sandbox against both visible and hidden test cases.
+                </p>
+                <div class="d-flex align-items-center gap-3 text-muted small font-monospace flex-wrap">
+                    <div><i class="bi bi-stopwatch text-primary me-1"></i>Time Used: <strong>{{ time_used_str }}</strong></div>
+                    <div><i class="bi bi-hourglass-split text-muted me-1"></i>Time Remaining: <strong>{{ time_remaining_str }}</strong></div>
+                </div>
+            </div>
+        </div>
+
+        <hr class="my-4" style="border-color: #e2e8f0;">
+
+        <!-- Metrics Grid -->
+        <div class="row g-3">
+            <div class="col-6 col-md-3">
+                <div class="perf-metric-tile">
+                    <div class="perf-metric-icon green">
+                        <i class="bi bi-check2-circle"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small font-monospace">Solved</div>
+                        <div class="fw-bold fs-5 text-main">{{ assessment.questions_solved }} / {{ assessment.total_questions }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-6 col-md-3">
+                <div class="perf-metric-tile">
+                    <div class="perf-metric-icon blue">
+                        <i class="bi bi-list-check"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small font-monospace">Attempted</div>
+                        <div class="fw-bold fs-5 text-main">{{ assessment.questions_attempted }} / {{ assessment.total_questions }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-6 col-md-3">
+                <div class="perf-metric-tile">
+                    <div class="perf-metric-icon purple">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small font-monospace">Test Cases</div>
+                        <div class="fw-bold fs-5 text-main">{{ assessment.passed_test_cases }} / {{ assessment.total_test_cases }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-6 col-md-3">
+                <div class="perf-metric-tile">
+                    <div class="perf-metric-icon orange">
+                        <i class="bi bi-bug"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small font-monospace">Errors / Fails</div>
+                        <div class="fw-bold fs-5 text-main">{{ assessment.failed_test_cases }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. PER-QUESTION DETAILED BREAKDOWN -->
+    <div class="mb-4">
+        <h2 class="h5 fw-bold text-main mb-3 d-flex align-items-center gap-2">
+            <i class="bi bi-code-slash text-primary"></i>
+            <span>Question Performance Breakdown</span>
+        </h2>
+
+        {% for res in results %}
+        {% set q_status = res.status %}
+        <div class="question-report-card {% if q_status == 'Solved' %}status-solved{% elif q_status == 'Partially Solved' %}status-partial{% else %}status-unsolved{% endif %}">
+            
+            <div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <span class="badge bg-light text-muted border font-monospace small">Problem {{ loop.index }}</span>
+                        <span class="badge {% if res.difficulty|lower == 'easy' %}bg-success-subtle text-success{% elif res.difficulty|lower == 'hard' %}bg-danger-subtle text-danger{% else %}bg-warning-subtle text-warning{% endif %} font-monospace">
+                            {{ res.difficulty }}
+                        </span>
+                        {% if q_status == 'Solved' %}
+                        <span class="badge bg-success-subtle text-success font-monospace">
+                            <i class="bi bi-check-circle-fill me-1"></i>Solved
+                        </span>
+                        {% elif q_status == 'Partially Solved' %}
+                        <span class="badge bg-warning-subtle text-warning font-monospace">
+                            <i class="bi bi-exclamation-circle-fill me-1"></i>Partially Solved
+                        </span>
+                        {% elif q_status == 'Execution Unavailable' or res.is_infrastructure_error %}
+                        <span class="badge bg-secondary-subtle text-secondary font-monospace">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i>Execution Unavailable
+                        </span>
+                        {% else %}
+                        <span class="badge bg-danger-subtle text-danger font-monospace">
+                            <i class="bi bi-x-circle-fill me-1"></i>Not Solved
+                        </span>
+                        {% endif %}
+                    </div>
+                    <h3 class="h5 fw-bold text-main mb-0">{{ res.title }}</h3>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-light text-muted border px-2.5 py-1 font-monospace">
+                        Score: <strong>{{ res.score|round|int }}</strong> / 100
+                    </span>
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 font-monospace" data-bs-toggle="modal" data-bs-target="#codeModal{{ loop.index }}">
+                        <i class="bi bi-code-square me-1"></i>View Submitted Code
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Bar -->
+            <div class="row g-2 mb-3">
+                <div class="col-6 col-sm-3">
+                    <div class="p-2.5 rounded bg-light border small">
+                        <span class="text-muted d-block font-monospace">Visible Tests</span>
+                        <strong class="text-main">{{ res.visible_passed }} / {{ res.visible_total }} passed</strong>
+                    </div>
+                </div>
+                <div class="col-6 col-sm-3">
+                    <div class="p-2.5 rounded bg-light border small">
+                        <span class="text-muted d-block font-monospace">Hidden Tests</span>
+                        <strong class="text-main">{{ res.hidden_passed }} / {{ res.hidden_total }} passed</strong>
+                    </div>
+                </div>
+                <div class="col-6 col-sm-3">
+                    <div class="p-2.5 rounded bg-light border small">
+                        <span class="text-muted d-block font-monospace">Total Tests</span>
+                        <strong class="text-main">{{ res.total_passed }} / {{ res.total_test_cases }} passed</strong>
+                    </div>
+                </div>
+                <div class="col-6 col-sm-3">
+                    <div class="p-2.5 rounded bg-light border small">
+                        <span class="text-muted d-block font-monospace">Execution Time</span>
+                        <strong class="text-main">{{ res.execution_time_ms }} ms</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Complexity & Feedback -->
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pt-2 border-top border-light">
+                <div class="small text-muted d-flex align-items-center gap-3 font-monospace flex-wrap">
+                    <span><i class="bi bi-clock-history me-1 text-primary"></i>Time: <code>{{ res.time_complexity }}</code></span>
+                    <span><i class="bi bi-memory me-1 text-primary"></i>Space: <code>{{ res.space_complexity }}</code></span>
+                </div>
+                <div class="small text-muted">
+                    <i class="bi bi-info-circle me-1 text-primary"></i>{{ res.code_quality_note }}
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Code Viewer Modal -->
+        <div class="modal fade" id="codeModal{{ loop.index }}" tabindex="-1" aria-labelledby="codeModalLabel{{ loop.index }}" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content border-0 shadow-lg rounded-4">
+                    <div class="modal-header border-bottom px-4 py-3">
+                        <div>
+                            <h5 class="modal-title fw-bold text-main" id="codeModalLabel{{ loop.index }}">Submitted Code — {{ res.title }}</h5>
+                            <span class="text-muted small font-monospace">Language: Python • Status: {{ res.status }}</span>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        {% if res.submitted_code and res.submitted_code.strip() %}
+                        <pre class="code-snippet-box"><code>{{ res.submitted_code }}</code></pre>
+                        {% else %}
+                        <div class="alert alert-light border text-muted small p-3 rounded-3 text-center">
+                            <i class="bi bi-file-earmark-x fs-3 d-block mb-1"></i>
+                            No code was submitted for this problem.
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="modal-footer border-top px-4 py-2.5">
+                        <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}
