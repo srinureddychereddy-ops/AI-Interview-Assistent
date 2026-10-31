@@ -1,0 +1,372 @@
+{% extends "base.html" %}
+
+{% block title %}Coding Round - Interview.ai{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/coding.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid coding-round-page fade-in p-0">
+    
+    <!-- Top Workspace Header -->
+    <div class="coding-ide-header">
+        <div class="d-flex align-items-center gap-3">
+            <a href="{{ url_for('select_coding_domain') }}" class="btn btn-sm btn-glass text-muted" title="Back to Language Setup">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+            <div>
+                <div class="d-flex align-items-center gap-2">
+                    <!-- Question Title: Two Sum (NOT language name) -->
+                    <h2 class="coding-ide-title mb-0">Two Sum</h2>
+                    <!-- Programming Language Badge -->
+                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-20 px-2.5 py-1 font-monospace" id="headerLanguageBadge">
+                        <i class="bi bi-file-code me-1"></i>{{ selected_domain or 'Python' }}
+                    </span>
+                    <!-- Difficulty Badge -->
+                    <span class="badge bg-warning bg-opacity-15 text-warning border border-warning border-opacity-25 px-2.5 py-1">{{ selected_difficulty or 'Medium' }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-3">
+            <div class="header-status-pill">
+                <i class="bi bi-journal-code text-primary me-1.5"></i>
+                <span>Question <strong>1</strong> of <strong>{{ question_count or '5' }}</strong></span>
+            </div>
+            
+            <div class="header-status-pill">
+                <i class="bi bi-clock-history text-warning me-1.5"></i>
+                <span id="timer" class="font-monospace fw-bold text-main">00:00</span>
+            </div>
+
+            <div class="header-status-pill">
+                <i class="bi bi-trophy-fill text-success me-1.5"></i>
+                <span>Score: <strong id="score-value" class="text-success font-monospace">0/100</strong></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Split 2-Pane Workspace -->
+    <div class="row g-0 coding-split-workspace">
+        
+        <!-- LEFT PANE (38%): Problem Statement -->
+        <div class="col-xl-5 col-lg-5 problem-pane">
+            <div class="card-glass h-100 d-flex flex-column p-0 border-0 rounded-0 border-end border-glass">
+                
+                <!-- Fixed Problem Header -->
+                <div class="problem-pane-header p-3.5 border-bottom border-glass">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <h4 class="problem-title mb-0">Two Sum</h4>
+                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-20 px-2.5 py-1 font-monospace" style="font-size: 0.72rem;">#1024</span>
+                    </div>
+                    
+                    <div class="d-flex align-items-center gap-3 mb-2.5">
+                        <span class="badge bg-warning bg-opacity-15 text-warning border border-warning border-opacity-25">{{ selected_difficulty or 'Medium' }}</span>
+                        <div class="small">
+                            <span class="text-muted">Acceptance Rate: </span>
+                            <strong class="text-main font-monospace">54.6%</strong>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-1.5 align-items-center">
+                        <span class="small text-muted me-1" style="font-size: 0.72rem;">Asked by:</span>
+                        <span class="badge bg-body-tertiary text-muted border border-glass small">Google</span>
+                        <span class="badge bg-body-tertiary text-muted border border-glass small">Amazon</span>
+                        <span class="badge bg-body-tertiary text-muted border border-glass small">Meta</span>
+                        <span class="badge bg-body-tertiary text-muted border border-glass small">Microsoft</span>
+                    </div>
+                </div>
+
+                <!-- Simplified Problem Nav Tabs (Description, Examples, Constraints, Hints) -->
+                <div class="problem-nav-tabs-wrapper border-bottom border-glass bg-body-tertiary">
+                    <ul class="nav nav-tabs border-0 px-3" id="problemTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="description-tab" data-bs-toggle="tab" data-bs-target="#description" type="button">
+                                <i class="bi bi-file-text me-1.5"></i>Description
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="examples-tab" data-bs-toggle="tab" data-bs-target="#examples" type="button">
+                                <i class="bi bi-code-square me-1.5"></i>Examples
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="constraints-tab" data-bs-toggle="tab" data-bs-target="#constraints" type="button">
+                                <i class="bi bi-shield-lock me-1.5"></i>Constraints
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="hints-tab" data-bs-toggle="tab" data-bs-target="#hints" type="button">
+                                <i class="bi bi-lightbulb me-1.5"></i>Hints
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Scrollable Problem Content Body -->
+                <div class="tab-content problem-tab-content p-4 flex-grow-1 overflow-auto">
+                    
+                    <!-- Description Tab -->
+                    <div class="tab-pane fade show active" id="description" role="tabpanel">
+                        <div class="problem-section mb-4">
+                            <p class="lh-lg text-main">Given an array of integers <code>nums</code> and an integer <code>target</code>, return indices of the two numbers such that they add up to <code>target</code>.</p>
+                            <p class="lh-lg text-muted">You may assume that each input would have exactly one solution, and you may not use the same element twice. You can return the answer in any order.</p>
+                        </div>
+
+                        <div class="problem-section mb-4">
+                            <h6 class="card-heading text-primary"><i class="bi bi-box-arrow-in-right me-1.5"></i>Input Format</h6>
+                            <p class="text-muted small">The first line contains an integer <code>n</code>, the size of the array. The second line contains <code>n</code> space-separated integers. The third line contains the <code>target</code> integer.</p>
+                        </div>
+
+                        <div class="problem-section mb-4">
+                            <h6 class="card-heading text-success"><i class="bi bi-box-arrow-right me-1.5"></i>Output Format</h6>
+                            <p class="text-muted small">Return the two indices as a space-separated string or array.</p>
+                        </div>
+
+                        <div class="problem-section">
+                            <h6 class="card-heading"><i class="bi bi-cpu me-1.5"></i>Expected Complexity</h6>
+                            <div class="d-flex gap-3">
+                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-20 px-3 py-2 font-monospace">Time: O(n)</span>
+                                <span class="badge bg-secondary bg-opacity-10 text-muted border border-secondary border-opacity-20 px-3 py-2 font-monospace">Space: O(n)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Examples Tab -->
+                    <div class="tab-pane fade" id="examples" role="tabpanel">
+                        <div class="card bg-body-tertiary border-glass mb-3 p-3">
+                            <h6 class="fw-bold mb-2 text-main">Example 1</h6>
+                            <div class="mb-2">
+                                <span class="small text-muted d-block font-monospace">Input:</span>
+                                <pre class="code-block bg-white p-2 rounded border border-glass text-main font-monospace mb-0"><code>nums = [2, 7, 11, 15], target = 9</code></pre>
+                            </div>
+                            <div class="mb-2">
+                                <span class="small text-muted d-block font-monospace">Output:</span>
+                                <pre class="code-block bg-white p-2 rounded border border-glass text-success font-monospace mb-0"><code>[0, 1]</code></pre>
+                            </div>
+                            <div>
+                                <span class="small text-muted d-block">Explanation:</span>
+                                <p class="small text-muted mb-0">Because <code>nums[0] + nums[1] == 9</code>, we return <code>[0, 1]</code>.</p>
+                            </div>
+                        </div>
+
+                        <div class="card bg-body-tertiary border-glass p-3">
+                            <h6 class="fw-bold mb-2 text-main">Example 2</h6>
+                            <div class="mb-2">
+                                <span class="small text-muted d-block font-monospace">Input:</span>
+                                <pre class="code-block bg-white p-2 rounded border border-glass text-main font-monospace mb-0"><code>nums = [3, 2, 4], target = 6</code></pre>
+                            </div>
+                            <div>
+                                <span class="small text-muted d-block font-monospace">Output:</span>
+                                <pre class="code-block bg-white p-2 rounded border border-glass text-success font-monospace mb-0"><code>[1, 2]</code></pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Constraints Tab -->
+                    <div class="tab-pane fade" id="constraints" role="tabpanel">
+                        <div class="d-flex flex-column gap-2.5">
+                            <div class="p-3 bg-body-tertiary border border-glass rounded-3 font-monospace small"><code class="text-main">2 &lt;= nums.length &lt;= 10^4</code></div>
+                            <div class="p-3 bg-body-tertiary border border-glass rounded-3 font-monospace small"><code class="text-main">-10^9 &lt;= nums[i] &lt;= 10^9</code></div>
+                            <div class="p-3 bg-body-tertiary border border-glass rounded-3 font-monospace small"><code class="text-main">-10^9 &lt;= target &lt;= 10^9</code></div>
+                            <div class="p-3 bg-body-tertiary border border-glass rounded-3 font-monospace small"><code class="text-main">Only one valid answer exists.</code></div>
+                        </div>
+                    </div>
+
+                    <!-- Hints Tab -->
+                    <div class="tab-pane fade" id="hints" role="tabpanel">
+                        <div class="accordion accordion-flush" id="hintsAccordion">
+                            <div class="accordion-item border border-glass rounded-3 mb-2 overflow-hidden">
+                                <h2 class="accordion-header"><button class="accordion-button collapsed bg-body-tertiary text-main font-monospace small py-2.5" type="button" data-bs-toggle="collapse" data-bs-target="#hint1">Hint 1: Brute Force vs Optimal</button></h2>
+                                <div id="hint1" class="accordion-collapse collapse" data-bs-parent="#hintsAccordion"><div class="accordion-body small text-muted">A brute force approach checks all pairs in O(n²). Can you use a data structure to trade space for time?</div></div>
+                            </div>
+                            <div class="accordion-item border border-glass rounded-3 mb-2 overflow-hidden">
+                                <h2 class="accordion-header"><button class="accordion-button collapsed bg-body-tertiary text-main font-monospace small py-2.5" type="button" data-bs-toggle="collapse" data-bs-target="#hint2">Hint 2: Hash Map Lookup</button></h2>
+                                <div id="hint2" class="accordion-collapse collapse" data-bs-parent="#hintsAccordion"><div class="accordion-body small text-muted">For each element <code>nums[i]</code>, check if <code>target - nums[i]</code> is already in the Hash Map.</div></div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Hidden original selectors to maintain JS compatibility -->
+                <div class="d-none">
+                    <select id="languageSelector">
+                        <option value="python">python</option>
+                        <option value="java">java</option>
+                        <option value="cpp">cpp</option>
+                        <option value="c">c</option>
+                        <option value="javascript">javascript</option>
+                        <option value="sql">sql</option>
+                    </select>
+                    <select id="difficultySelector"><option value="Medium">Medium</option></select>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT PANE (62%): Visually Dominant Monaco IDE & Always-Visible STDIN/STDOUT -->
+        <div class="col-xl-7 col-lg-7 editor-pane-container">
+            <div class="d-flex flex-column h-100 bg-white">
+                
+                <!-- Monaco Toolbar -->
+                <div class="editor-toolbar d-flex align-items-center justify-content-between px-3 py-2 border-bottom border-glass bg-body-tertiary">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-20 px-2.5 py-1 font-monospace">
+                            <i class="bi bi-code-square me-1"></i>CODE EDITOR
+                        </span>
+                        <span class="text-muted small font-monospace d-none d-md-inline" style="font-size: 0.75rem;" id="activeLangDisplay">{{ selected_domain or 'Python' }}</span>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2">
+                        <!-- Theme Selector -->
+                        <select id="themeSelector" class="form-select form-select-sm font-monospace" style="width: 110px;">
+                            <option value="VS Light" selected>VS Light</option>
+                            <option value="VS Dark">VS Dark</option>
+                            <option value="High Contrast">VS High Contrast</option>
+                        </select>
+
+                        <!-- Font Size Selector -->
+                        <select id="fontSizeSelector" class="form-select form-select-sm font-monospace" style="width: 85px;">
+                            <option value="14">14px</option>
+                            <option value="16">16px</option>
+                            <option value="18">18px</option>
+                        </select>
+
+                        <!-- Format Code Button -->
+                        <button type="button" id="formatBtn" class="btn btn-sm btn-glass text-muted" title="Format Code">
+                            <i class="bi bi-magic"></i>
+                        </button>
+
+                        <!-- Fullscreen Toggle -->
+                        <button type="button" class="btn btn-sm btn-glass text-muted" id="fullscreenBtn" title="Fullscreen">
+                            <i class="bi bi-arrows-fullscreen"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Visually Dominant Monaco Editor Canvas (Fills height) -->
+                <div id="editor-container" class="monaco-canvas-container flex-grow-1"></div>
+
+                <!-- Compact 1-Row Interview Status Bar below Monaco -->
+                <div class="editor-compact-status-bar d-flex flex-wrap align-items-center justify-content-between px-3 py-1.5 border-top border-glass bg-body-tertiary text-muted small font-monospace">
+                    <div class="d-flex align-items-center gap-3">
+                        <span><i class="bi bi-circle-fill text-success me-1" style="font-size: 0.5rem;"></i>IDE Ready</span>
+                        <span>Question: <strong>1/{{ question_count or '5' }}</strong></span>
+                        <span>Language: <strong class="text-primary" id="statusBarLang">{{ selected_domain or 'Python' }}</strong></span>
+                        <span>Difficulty: <strong class="text-warning">{{ selected_difficulty or 'Medium' }}</strong></span>
+                        <span>Time Left: <strong id="timer" class="text-main">00:00</strong></span>
+                    </div>
+                    
+                    <div class="d-flex align-items-center gap-3">
+                        <span>Test Cases: <strong id="test-case-status" class="text-main">0 / 2</strong></span>
+                        <div class="progress d-inline-block" style="width: 45px; height: 6px; vertical-align: middle;">
+                            <div id="test-case-progress" class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <span>Score: <strong id="score-value" class="text-success">0/100</strong></span>
+                        <span>Attempts: <strong class="text-main">0/3</strong></span>
+                    </div>
+                </div>
+
+                <!-- ALWAYS-VISIBLE SEQUENTIAL IO WORKSPACE (Custom Input & Program Output) -->
+                <div class="console-panel border-top border-glass bg-white flex-shrink-0 p-3">
+                    
+                    <!-- Hidden tab buttons for coding.js compatibility -->
+                    <div class="d-none">
+                        <button id="output-tab" data-bs-toggle="tab" data-bs-target="#output"></button>
+                        <button id="status-tab" data-bs-toggle="tab" data-bs-target="#status"></button>
+                        <button id="custom-input-tab" data-bs-toggle="tab" data-bs-target="#custom-input"></button>
+                        <button id="ai-review-tab" data-bs-toggle="tab" data-bs-target="#ai-review"></button>
+                    </div>
+
+                    <!-- 1. ALWAYS-VISIBLE CUSTOM INPUT (STDIN) -->
+                    <div class="mb-3">
+                        <label class="card-heading text-main mb-1.5 d-flex align-items-center justify-content-between">
+                            <span><i class="bi bi-input-cursor me-1.5 text-primary"></i>Custom Input (STDIN)</span>
+                            <span class="text-muted small font-monospace" style="font-size: 0.7rem;">Optional parameter inputs</span>
+                        </label>
+                        <textarea id="customInputArea" class="form-control font-monospace console-textarea" rows="2" placeholder="Enter your custom input here..."></textarea>
+                    </div>
+
+                    <!-- 2. ALWAYS-VISIBLE PROGRAM OUTPUT (STDOUT) -->
+                    <div>
+                        <label class="card-heading text-main mb-1.5 d-flex align-items-center justify-content-between">
+                            <span><i class="bi bi-terminal me-1.5 text-success"></i>Program Output (STDOUT)</span>
+                        </label>
+                        
+                        <!-- Execution Details Badge Container (Runtime, Memory, Status) -->
+                        <div id="output-details" class="output-details-container d-none mb-2"></div>
+                        
+                        <!-- Output Pre Box -->
+                        <pre id="outputArea" class="console-pre mb-0 font-monospace"><code>Output will appear here after running your code.</code></pre>
+                    </div>
+
+                    <!-- 3. COLLAPSIBLE SECONDARY FEATURES (AI Review & Submission Status) -->
+                    <div class="accordion accordion-flush mt-3 border-top border-glass pt-2" id="secondaryConsoleAccordion">
+                        
+                        <!-- AI Review Collapsible Item -->
+                        <div class="accordion-item border border-glass rounded-3 mb-2 overflow-hidden">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed bg-body-tertiary text-main font-monospace small py-2" type="button" data-bs-toggle="collapse" data-bs-target="#aiReviewCollapse">
+                                    <i class="bi bi-cpu text-primary me-2"></i>AI Code Review & Optimization
+                                </button>
+                            </h2>
+                            <div id="aiReviewCollapse" class="accordion-collapse collapse" data-bs-parent="#secondaryConsoleAccordion">
+                                <div class="accordion-body p-3 bg-white" id="ai-review">
+                                    <p class="text-muted small mb-0">Run or submit your solution to generate AI code optimization suggestions, time complexity breakdown, and edge case analysis.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submission Status Collapsible Item -->
+                        <div class="accordion-item border border-glass rounded-3 overflow-hidden">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed bg-body-tertiary text-main font-monospace small py-2" type="button" data-bs-toggle="collapse" data-bs-target="#submissionStatusCollapse">
+                                    <i class="bi bi-check2-circle text-success me-2"></i>Submission History & Status
+                                </button>
+                            </h2>
+                            <div id="submissionStatusCollapse" class="accordion-collapse collapse" data-bs-parent="#secondaryConsoleAccordion">
+                                <div class="accordion-body p-3 bg-white" id="status">
+                                    <div id="status-details" class="output-details-container d-none mb-2"></div>
+                                    <pre id="statusArea" class="console-pre mb-0 font-monospace"><code>Submit your solution to evaluate against all test cases.</code></pre>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- Sticky Bottom Action Bar -->
+                <div class="coding-action-bar d-flex align-items-center justify-content-between p-3 border-top border-glass bg-white">
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" id="copyBtn" class="btn btn-glass btn-md">
+                            <i class="bi bi-clipboard me-1.5"></i>Copy Code
+                        </button>
+                        <button type="button" id="resetBtn" class="btn btn-glass btn-md">
+                            <i class="bi bi-arrow-counterclockwise me-1.5"></i>Reset Code
+                        </button>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2.5">
+                        <button type="button" id="runBtn" class="btn btn-primary btn-md px-4 d-flex align-items-center gap-2">
+                            <i class="bi bi-play-fill fs-5"></i><span>Run Code</span>
+                        </button>
+                        <button type="button" id="submitBtn" class="btn btn-success btn-md px-4 d-flex align-items-center gap-2">
+                            <i class="bi bi-cloud-arrow-up-fill fs-5"></i><span>Submit Solution</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Monaco Editor AMD Loader -->
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.34.1/min/vs/loader.js"></script>
+<script src="{{ url_for('static', filename='js/coding.js') }}"></script>
+{% endblock %}

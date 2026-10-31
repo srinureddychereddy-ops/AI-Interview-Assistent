@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}Coding Interview Setup — Interview.ai{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/select_domain.css') }}">
+{% endblock %}
+
+{% block content %}
+<div id="coding-domain-selection-page" class="container-fluid coding-domain-page py-4 fade-in">
+    
+    <!-- Hero Header -->
+    <div class="coding-domain-hero mb-4">
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-20 px-3 py-1 font-monospace" style="font-size: 0.75rem;">
+                <i class="bi bi-code-square me-1"></i>CODING SETUP
+            </span>
+        </div>
+        <h1 class="section-title mb-1">Select Your Target Language</h1>
+        <p class="text-muted small mb-0">Choose your preferred programming language, difficulty, and question set to begin your live coding round.</p>
+    </div>
+
+    <!-- Language Cards Grid (9 Languages) -->
+    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4 mb-5" id="languageCardsGrid">
+        {% set languages = [
+            ("Python", "bi bi-filetype-py", "#1 Popular", "Data structures, algorithms, automation, and AI coding challenges.", "#3776AB"),
+            ("Java", "bi bi-filetype-java", "Enterprise Standard", "Object-oriented programming, collection frameworks, and enterprise logic.", "#007396"),
+            ("C++", "bi bi-code-slash", "High Performance", "Memory management, pointers, STL algorithms, and competitive coding.", "#00599C"),
+            ("C", "bi bi-file-code", "System Level", "Low-level memory allocation, pointers, and fundamental programming.", "#A8B9CC"),
+            ("JavaScript", "bi bi-filetype-js", "Web & Fullstack", "Asynchronous programming, ES6+ features, and browser/Node algorithms.", "#F7DF1E"),
+            ("SQL", "bi bi-database-fill", "Database & Data", "Relational database queries, complex joins, aggregations, and schema logic.", "#4479A1"),
+            ("Go", "bi bi-lightning-charge-fill", "Cloud & Microservices", "Goroutines, concurrency models, channels, and backend microservices.", "#00ADD8"),
+            ("Rust", "bi bi-shield-check", "Memory Safe", "Ownership model, borrow checker, zero-cost abstractions, and safety.", "#DEA584"),
+            ("Kotlin", "bi bi-android2", "Modern JVM", "Coroutines, null safety, concise syntax, and modern OOP paradigms.", "#7F52FF")
+        ] %}
+
+        {% for name, icon, badge_text, desc, brand_color in languages %}
+        <div class="col">
+            <div class="card h-100 coding-domain-card position-relative" data-language="{{ name }}">
+                <div class="domain-card-topline">
+                    <div class="coding-domain-icon" style="color: {{ brand_color }};">
+                        <i class="{{ icon }}"></i>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-20 small font-monospace" style="font-size: 0.68rem;">{{ badge_text }}</span>
+                        <span class="domain-selected-check"><i class="bi bi-check-lg"></i></span>
+                    </div>
+                </div>
+                
+                <h2>{{ name }}</h2>
+                <p class="coding-domain-description">{{ desc }}</p>
+                
+                <div class="d-flex align-items-center justify-content-between pt-2 border-top mt-auto" style="border-color: var(--border-base) !important;">
+                    <span class="text-muted small" style="font-size: 0.73rem;"><i class="bi bi-sliders me-1"></i>Difficulty Support:</span>
+                    <span class="text-main small fw-bold" style="font-size: 0.73rem;">Easy • Medium • Hard</span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Configuration Panel (Difficulty & Question Count) -->
+    <div class="card-glass p-4 mb-4">
+        <div class="row g-4 align-items-center">
+            
+            <!-- Difficulty Selector -->
+            <div class="col-lg-6">
+                <label class="card-heading mb-2 d-block text-main">
+                    <i class="bi bi-bar-chart-steps text-primary me-1"></i>Select Difficulty
+                </label>
+                <div class="d-flex gap-2" id="difficultySelectorContainer">
+                    <button type="button" class="btn btn-difficulty flex-fill easy" data-difficulty="Easy">
+                        <i class="bi bi-circle-fill me-1 small" style="font-size: 0.55rem;"></i>Easy
+                    </button>
+                    <button type="button" class="btn btn-difficulty flex-fill medium active" data-difficulty="Medium">
+                        <i class="bi bi-circle-fill me-1 small" style="font-size: 0.55rem;"></i>Medium
+                    </button>
+                    <button type="button" class="btn btn-difficulty flex-fill hard" data-difficulty="Hard">
+                        <i class="bi bi-circle-fill me-1 small" style="font-size: 0.55rem;"></i>Hard
+                    </button>
+                </div>
+            </div>
+
+            <!-- Number of Coding Questions Selector -->
+            <div class="col-lg-6">
+                <label class="card-heading mb-2 d-block text-main">
+                    <i class="bi bi-list-ol text-primary me-1"></i>Number of Coding Questions
+                </label>
+                <div class="d-flex flex-wrap gap-2 align-items-center" id="questionCountContainer">
+                    <button type="button" class="btn btn-question-count" data-count="3">3 Questions</button>
+                    <button type="button" class="btn btn-question-count active" data-count="5">5 Questions</button>
+                    <button type="button" class="btn btn-question-count" data-count="10">10 Questions</button>
+                    <button type="button" class="btn btn-question-count" data-count="custom">Custom</button>
+                    
+                    <div id="customCountWrapper" class="d-none align-items-center gap-2 ms-md-2">
+                        <input type="number" id="custom-q-input" class="form-control form-control-sm text-center font-monospace" min="1" max="20" value="5" style="width: 76px; height: 38px;">
+                        <span class="text-muted small">Questions</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<!-- Sticky Bottom Action Bar -->
+<div class="coding-setup-footer">
+    <div class="container-fluid max-w-1540">
+        <div class="row align-items-center gy-3">
+            <div class="col-lg-8">
+                <div class="d-flex flex-wrap align-items-center gap-4">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="summary-icon">
+                            <i class="bi bi-cpu-fill"></i>
+                        </div>
+                        <div>
+                            <span class="text-muted small d-block font-monospace" style="font-size: 0.7rem; text-transform: uppercase;">Selected Language</span>
+                            <strong id="summary-domain" class="text-main h6 mb-0">None Selected</strong>
+                        </div>
+                    </div>
+
+                    <div class="summary-metric">
+                        <span>Difficulty</span>
+                        <strong id="summary-difficulty" class="text-primary">Medium</strong>
+                    </div>
+
+                    <div class="summary-metric">
+                        <span>Questions</span>
+                        <strong id="summary-questions">5 Questions</strong>
+                    </div>
+
+                    <div class="summary-metric">
+                        <span>Est. Duration</span>
+                        <strong id="summary-duration" class="text-success"><i class="bi bi-clock me-1"></i>~25 mins</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 text-lg-end">
+                <button type="button" id="start-coding-btn" class="btn btn-premium btn-lg w-100 d-flex align-items-center justify-content-center gap-2" disabled>
+                    <i class="bi bi-play-fill fs-5"></i>Start Coding Round
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        let selectedLanguage = null;
+        let selectedDifficulty = "Medium";
+        let selectedQuestionCount = 5;
+
+        const languageCards = document.querySelectorAll(".coding-domain-card");
+        const difficultyBtns = document.querySelectorAll(".btn-difficulty");
+        const questionBtns = document.querySelectorAll(".btn-question-count");
+        const customCountWrapper = document.getElementById("customCountWrapper");
+        const customQInput = document.getElementById("custom-q-input");
+        
+        const summaryLanguage = document.getElementById("summary-domain");
+        const summaryDifficulty = document.getElementById("summary-difficulty");
+        const summaryQuestions = document.getElementById("summary-questions");
+        const summaryDuration = document.getElementById("summary-duration");
+        const startCodingBtn = document.getElementById("start-coding-btn");
+
+        // 1. Single Language Selection
+        languageCards.forEach(card => {
+            card.addEventListener("click", function () {
+                languageCards.forEach(c => c.classList.remove("is-selected"));
+                this.classList.add("is-selected");
+                selectedLanguage = this.getAttribute("data-language");
+                updateSummaryAndValidation();
+            });
+        });
+
+        // 2. Difficulty Selection
+        difficultyBtns.forEach(btn => {
+            btn.addEventListener("click", function () {
+                difficultyBtns.forEach(b => b.classList.remove("active", "selected"));
+                this.classList.add("active", "selected");
+                selectedDifficulty = this.getAttribute("data-difficulty");
+                updateSummaryAndValidation();
+            });
+        });
+
+        // 3. Question Count Selection
+        questionBtns.forEach(btn => {
+            btn.addEventListener("click", function () {
+                questionBtns.forEach(b => b.classList.remove("active"));
+                this.classList.add("active");
+                
+                const countVal = this.getAttribute("data-count");
+                if (countVal === "custom") {
+                    customCountWrapper.classList.remove("d-none");
+                    customCountWrapper.classList.add("d-flex");
+                    selectedQuestionCount = parseInt(customQInput.value, 10) || 5;
+                } else {
+                    customCountWrapper.classList.add("d-none");
+                    customCountWrapper.classList.remove("d-flex");
+                    selectedQuestionCount = parseInt(countVal, 10);
+                }
+                updateSummaryAndValidation();
+            });
+        });
+
+        if (customQInput) {
+            customQInput.addEventListener("input", function () {
+                let val = parseInt(this.value, 10);
+                if (isNaN(val) || val < 1) val = 1;
+                if (val > 50) val = 50;
+                selectedQuestionCount = val;
+                updateSummaryAndValidation();
+            });
+        }
+
+        // 4. Summary & Validation Update Engine
+        function updateSummaryAndValidation() {
+            // Update Summary Text
+            if (summaryLanguage) {
+                summaryLanguage.textContent = selectedLanguage || "None Selected";
+            }
+            if (summaryDifficulty) {
+                summaryDifficulty.textContent = selectedDifficulty;
+            }
+            if (summaryQuestions) {
+                summaryQuestions.textContent = `${selectedQuestionCount} Questions`;
+            }
+            if (summaryDuration) {
+                const minutes = selectedQuestionCount * 5;
+                summaryDuration.innerHTML = `<i class="bi bi-clock me-1"></i>~${minutes} mins`;
+            }
+
+            // Enable Start button only if Language, Difficulty, and valid Question Count are present
+            const isValid = selectedLanguage && selectedDifficulty && selectedQuestionCount > 0;
+            if (startCodingBtn) {
+                if (isValid) {
+                    startCodingBtn.removeAttribute("disabled");
+                    startCodingBtn.classList.remove("disabled");
+                } else {
+                    startCodingBtn.setAttribute("disabled", "true");
+                    startCodingBtn.classList.add("disabled");
+                }
+            }
+        }
+
+        if (startCodingBtn) {
+            startCodingBtn.addEventListener("click", function (e) {
+                e.preventDefault();
+                if (!selectedLanguage || !selectedDifficulty || !selectedQuestionCount) return;
+
+                if (window.showLoader) {
+                    window.showLoader(`Loading ${selectedLanguage} Coding Round...`);
+                }
+
+                const targetUrl = `/coding-round?domain=${encodeURIComponent(selectedLanguage)}&difficulty=${encodeURIComponent(selectedDifficulty)}&questions=${encodeURIComponent(selectedQuestionCount)}`;
+                window.location.href = targetUrl;
+            });
+        }
+
+        updateSummaryAndValidation();
+    });
+</script>
+{% endblock %}

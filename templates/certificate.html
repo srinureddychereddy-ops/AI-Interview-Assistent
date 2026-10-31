@@ -1,0 +1,401 @@
+{% extends "base.html" %}
+
+{% block title %}Certificate of Completion — {{ cert.domain if cert else journey.domain }} — Interview.ai{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Certificate Page Styles - Light Theme */
+.cert-page-container,
+.certificate-page {
+    max-width: 1050px;
+    margin: 1.5rem auto 3rem;
+    padding: 0 1rem;
+}
+
+.cert-actions-bar,
+.certificate-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem 1.5rem;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+}
+
+.cert-actions-bar .badge-verified,
+.certificate-actions .badge-verified {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: #ecfdf5;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    color: #065f46;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+}
+
+/* Certificate Outer Frame */
+.certificate-wrapper {
+    background: #ffffff;
+    border: 12px solid #1e293b;
+    border-radius: 20px;
+    padding: 14px;
+    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.12);
+    position: relative;
+    overflow: hidden;
+    margin: 0 auto;
+}
+
+.certificate-inner {
+    border: 2px solid #cbd5e1;
+    border-radius: 12px;
+    padding: clamp(1.75rem, 4vw, 3.25rem);
+    text-align: center;
+    position: relative;
+    background: radial-gradient(circle at 50% 50%, #ffffff 0%, #fafafa 100%);
+}
+
+/* Watermark background */
+.certificate-inner::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 320px;
+    height: 320px;
+    background: radial-gradient(circle, rgba(79, 70, 229, 0.04) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+/* Top Branding */
+.cert-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 1.25rem;
+}
+
+.cert-brand-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: #ffffff;
+    display: grid;
+    place-items: center;
+    font-size: 1.35rem;
+    box-shadow: 0 8px 20px rgba(79, 70, 229, 0.25);
+}
+
+.cert-brand-name {
+    font-size: 1.4rem;
+    font-weight: 850;
+    letter-spacing: -0.03em;
+    color: #0f172a;
+}
+
+.cert-title-kicker {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #4f46e5;
+    margin-bottom: 0.35rem;
+}
+
+.cert-main-title {
+    font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #0f172a;
+    margin-bottom: 1rem;
+    font-family: Georgia, 'Times New Roman', serif;
+}
+
+.cert-presentation {
+    font-size: 0.9rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #64748b;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+}
+
+.cert-candidate-name {
+    font-size: clamp(1.6rem, 3.2vw, 2.4rem);
+    font-weight: 800;
+    color: #1e1b4b;
+    margin: 0.25rem 0 1rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 2px solid #e2e8f0;
+    display: inline-block;
+    max-width: 90%;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    font-family: 'Inter', sans-serif;
+}
+
+.cert-statement {
+    max-width: 680px;
+    margin: 0 auto 1.75rem;
+    font-size: 0.98rem;
+    line-height: 1.65;
+    color: #334155;
+    word-break: break-word;
+}
+
+.cert-statement strong {
+    color: #4f46e5;
+    font-weight: 750;
+}
+
+/* Verified Scores Pill Box */
+.cert-scores-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+    margin: 0 auto 2rem;
+    max-width: 640px;
+}
+
+@media (max-width: 680px) {
+    .cert-scores-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+}
+
+.cert-score-chip {
+    padding: 10px 14px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+    text-align: center;
+}
+
+.cert-score-label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 750;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #64748b;
+    margin-bottom: 4px;
+}
+
+.cert-score-val {
+    font-size: 1.2rem;
+    font-weight: 850;
+    color: #0f172a;
+}
+
+.cert-score-val small {
+    font-size: 0.72rem;
+    color: #10b981;
+    margin-left: 2px;
+}
+
+/* Certificate Footer & Signatures */
+.cert-footer-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e2e8f0;
+    margin-top: 1.25rem;
+}
+
+.cert-meta-col {
+    text-align: left;
+    min-width: 140px;
+}
+
+.cert-meta-label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #94a3b8;
+    letter-spacing: 0.05em;
+}
+
+.cert-meta-value {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #1e293b;
+    font-family: monospace;
+}
+
+/* Gold Official Seal */
+.cert-seal-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #fef3c7 20%, #f59e0b 100%);
+    border: 3px dashed #b45309;
+    color: #78350f;
+    box-shadow: 0 8px 24px rgba(245, 158, 11, 0.25);
+    margin: 0 auto;
+    flex-shrink: 0;
+}
+
+.cert-seal-badge i {
+    font-size: 1.35rem;
+    margin-bottom: 1px;
+}
+
+.cert-seal-badge span {
+    font-size: 0.55rem;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.cert-signature-col {
+    text-align: right;
+    min-width: 160px;
+}
+
+.cert-signature-line {
+    width: 160px;
+    border-bottom: 1.5px solid #1e293b;
+    margin-bottom: 6px;
+    margin-left: auto;
+}
+
+.cert-signature-title {
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: #334155;
+    margin: 0;
+}
+
+.cert-signature-sub {
+    font-size: 0.66rem;
+    color: #94a3b8;
+    margin: 0;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="certificate-page cert-page-container fade-in">
+
+    <!-- Top Action Bar -->
+    <div class="certificate-actions cert-actions-bar">
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary rounded-pill px-3 py-1.5 btn-sm font-monospace fw-semibold">
+                <i class="bi bi-arrow-left me-1"></i> Dashboard
+            </a>
+            <span class="badge-verified">
+                <i class="bi bi-patch-check-fill text-success"></i> Officially Verified Credential
+            </span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ url_for('journey_certificate_print') }}" target="_blank" onclick="window.print()" class="btn btn-primary rounded-pill px-4 py-2 font-monospace fw-bold shadow-sm text-decoration-none">
+                <i class="bi bi-printer-fill me-1.5"></i> Print / Download PDF
+            </a>
+        </div>
+    </div>
+
+    <!-- Official Certificate Document (Normal Screen View) -->
+    <div class="certificate-wrapper" id="printableCertificate">
+        <div class="certificate-inner">
+
+            <!-- Company / Platform Header -->
+            <div class="cert-brand">
+                <div class="cert-brand-icon">
+                    <i class="bi bi-cpu-fill"></i>
+                </div>
+                <div class="text-start">
+                    <div class="cert-brand-name">Interview.ai</div>
+                    <small class="text-muted font-monospace" style="font-size: 0.68rem; letter-spacing: 0.08em;">ADVANCED AI TALENT ASSESSMENT</small>
+                </div>
+            </div>
+
+            <!-- Title & Presentation -->
+            <div class="mb-3">
+                <span class="cert-title-kicker">Credential of Excellence</span>
+                <h1 class="cert-main-title">Certificate of Completion</h1>
+                <p class="cert-presentation">This certificate is proudly presented to</p>
+                <div class="cert-candidate-name">
+                    {{ cert.candidate_name if (cert and cert.candidate_name) else ((current_user.profile.first_name ~ ' ' ~ current_user.profile.last_name)|trim if (current_user.profile and (current_user.profile.first_name or current_user.profile.last_name)) else current_user.username) }}
+                </div>
+            </div>
+
+            <!-- Completion Statement -->
+            <p class="cert-statement">
+                For successfully completing the complete <strong>{{ cert.domain if cert else journey.domain }}</strong> AI Interview Journey.
+                The candidate has demonstrated verified competency across all three stages:
+                <strong>Resume Optimization</strong>, <strong>Technical Aptitude Assessment</strong>, and <strong>Hands-on Coding Assessment</strong>.
+            </p>
+
+            <!-- Verified Milestone Scores -->
+            <div class="cert-scores-grid">
+                <div class="cert-score-chip">
+                    <span class="cert-score-label"><i class="bi bi-file-earmark-check me-1"></i> Stage 1: Resume</span>
+                    <div class="cert-score-val">{{ cert.ats_score|round|int if cert and cert.ats_score else (journey.resume.ats_score or 80) }}% <small>✓ Verified</small></div>
+                </div>
+                <div class="cert-score-chip">
+                    <span class="cert-score-label"><i class="bi bi-award me-1"></i> Stage 2: Aptitude</span>
+                    <div class="cert-score-val">{{ cert.aptitude_score if cert and cert.aptitude_score else (journey.aptitude.score or 80) }}% <small>✓ Verified</small></div>
+                </div>
+                <div class="cert-score-chip">
+                    <span class="cert-score-label"><i class="bi bi-code-slash me-1"></i> Stage 3: Coding</span>
+                    <div class="cert-score-val">{{ cert.coding_score|round|int if cert and cert.coding_score else (journey.coding.score or 80) }}% <small>✓ Completed</small></div>
+                </div>
+            </div>
+
+            <!-- Footer Details & Signatures -->
+            <div class="cert-footer-row">
+                <!-- Metadata Column -->
+                <div class="cert-meta-col">
+                    <div class="mb-1.5">
+                        <span class="cert-meta-label">Certificate ID</span>
+                        <span class="cert-meta-value">{{ cert.certificate_id if cert else (journey.certificate.id or 'IA-2026-CERT') }}</span>
+                    </div>
+                    <div>
+                        <span class="cert-meta-label">Issue Date</span>
+                        <span class="cert-meta-value">{{ cert.issue_date.strftime('%B %d, %Y') if cert and cert.issue_date else 'Current' }}</span>
+                    </div>
+                </div>
+
+                <!-- Official Gold Seal -->
+                <div>
+                    <div class="cert-seal-badge">
+                        <i class="bi bi-patch-check-fill"></i>
+                        <span>VERIFIED</span>
+                    </div>
+                </div>
+
+                <!-- Signature Column -->
+                <div class="cert-signature-col">
+                    <div class="cert-signature-line"></div>
+                    <p class="cert-signature-title">Interview.ai Certification Board</p>
+                    <p class="cert-signature-sub">AI Interview Verification & Assessment System</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}

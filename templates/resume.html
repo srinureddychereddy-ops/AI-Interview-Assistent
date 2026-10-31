@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+@keyframes skeletonPulse {
+  0% { opacity: 0.5; }
+  50% { opacity: 0.95; }
+  100% { opacity: 0.5; }
+}
+.skeleton-shimmer {
+  background: linear-gradient(90deg, rgba(226, 232, 240, 0.5) 25%, rgba(203, 213, 225, 0.8) 50%, rgba(226, 232, 240, 0.5) 75%);
+  background-size: 200% 100%;
+  animation: skeletonPulse 1.8s ease-in-out infinite;
+}
+.skeleton-circle {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  margin: 0 auto;
+}
+.skeleton-line {
+  height: 14px;
+  border-radius: 6px;
+  display: block;
+}
+.skeleton-pill {
+  height: 28px;
+  width: 90px;
+  border-radius: 20px;
+  display: inline-block;
+}
+.skeleton-box {
+  border-radius: 12px;
+}
+.stage-chip {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(0,0,0,0.08);
+  background: rgba(255,255,255,0.7);
+  color: #64748b;
+  transition: all 0.3s ease;
+}
+.stage-chip.active {
+  border-color: var(--color-primary, #4f46e5);
+  background: rgba(79, 70, 229, 0.1);
+  color: var(--color-primary, #4f46e5);
+}
+.stage-chip.completed {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer {
+    animation: none;
+    opacity: 0.7;
+  }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+{% set data = form_data or {} %}
+{% set selected_type = data.interview_type or 'technical' %}
+
+<main class="resume-ai-page fade-in" id="resumeAnalyzerPageV2">
+  <header class="resume-ai-hero resume-flagship-hero resume-glass">
+    <div class="resume-flagship-copy">
+      <div class="resume-ai-eyebrow"><i class="bi bi-stars"></i> AI Resume Intelligence</div>
+      <h1>Turn your resume into an <span>interview advantage.</span></h1>
+      <p>See how recruiters and ATS systems interpret your experience, then generate a preparation plan built around the exact role you want.</p>
+      <div class="resume-trust-signals"><span><i class="bi bi-shield-check"></i><b>Private analysis</b></span><span><i class="bi bi-lightning-charge"></i><b>Instant insights</b></span><span><i class="bi bi-diagram-3"></i><b>Role-aware AI</b></span></div>
+    </div>
+    <div class="resume-scan-visual" aria-hidden="true">
+      <div class="scan-document"><span></span><i></i><i></i><i></i><i></i><b>PDF</b><em></em></div>
+      <div class="scan-orbit scan-one"><i class="bi bi-check2"></i> ATS</div><div class="scan-orbit scan-two"><i class="bi bi-stars"></i> AI</div>
+    </div>
+  </header>
+
+  {% if selected_domain %}
+  <!-- AUTHORITATIVE TARGET DOMAIN BANNER -->
+  <div class="alert alert-info border-0 d-flex align-items-center justify-content-between p-3.5 rounded-4 mb-4 shadow-xs" style="background: rgba(37, 99, 235, 0.08); border-left: 4px solid var(--color-primary, #2563eb) !important;">
+    <div class="d-flex align-items-center gap-3">
+      <div class="rounded-circle d-grid place-items-center bg-primary-subtle text-primary" style="width: 40px; height: 40px; font-size: 1.25rem;">
+        <i class="bi {{ domain_metadata.icon if domain_metadata and domain_metadata.icon else 'bi-diagram-3-fill' }}"></i>
+      </div>
+      <div>
+        <div class="d-flex align-items-center gap-2">
+          <strong class="text-main" style="font-size: 0.92rem;">Target Domain: {{ selected_domain }}</strong>
+          <span class="badge bg-primary-subtle text-primary rounded-pill font-monospace" style="font-size: 0.7rem;">Authoritative Track</span>
+        </div>
+        <span class="text-muted small">Your resume analysis and ATS scoring are aligned to your dashboard-selected engineering domain.</span>
+      </div>
+    </div>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 font-monospace small flex-shrink-0">
+      <i class="bi bi-arrow-repeat me-1"></i>Change Domain
+    </a>
+  </div>
+  {% else %}
+  <!-- MISSING DOMAIN SELECTION WARNING -->
+  <div class="alert alert-warning border-0 d-flex align-items-center justify-content-between p-3.5 rounded-4 mb-4 shadow-xs" style="background: rgba(245, 158, 11, 0.1); border-left: 4px solid var(--color-warning, #f59e0b) !important;">
+    <div class="d-flex align-items-center gap-3">
+      <div class="rounded-circle d-grid place-items-center bg-warning-subtle text-warning" style="width: 40px; height: 40px; font-size: 1.25rem;">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+      </div>
+      <div>
+        <strong class="d-block text-main mb-0.5" style="font-size: 0.92rem;">Target Domain Selection Required</strong>
+        <span class="text-muted small">Please select your target domain from the Dashboard before analyzing your resume.</span>
+      </div>
+    </div>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-warning rounded-pill px-3.5 py-2 font-monospace small fw-bold flex-shrink-0 shadow-sm">
+      <i class="bi bi-compass me-1"></i>Select Domain on Dashboard
+    </a>
+  </div>
+  {% endif %}
+
+  <form id="resumeAnalyzerFormV2" action="{{ url_for('resume_upload') }}" method="POST" enctype="multipart/form-data" novalidate>
+    <div class="row g-4">
+      <div class="col-lg-6">
+        <section class="resume-ai-card resume-glass h-100">
+          <div class="resume-card-heading"><span class="resume-heading-icon violet"><i class="bi bi-file-earmark-pdf"></i></span><div><h2>Upload Resume</h2><p>PDF only &middot; Maximum file size 5 MB</p></div></div>
+          <div class="resume-dropzone" id="resumeDropzoneV2" tabindex="0" role="button" aria-label="Upload PDF resume">
+            <input type="file" name="resume" id="resumeFileV2" accept="application/pdf,.pdf" hidden required>
+            <div id="dropzoneEmptyV2"><span class="resume-upload-orb"><i class="bi bi-cloud-arrow-up"></i></span><h3>Drag and drop your resume</h3><p>or select a PDF from your computer</p><button type="button" id="browseResumeV2">Browse PDF</button></div>
+            <div class="resume-selected-file d-none" id="selectedFileV2"><span><i class="bi bi-file-earmark-check"></i></span><strong id="selectedFileNameV2">resume.pdf</strong><small id="selectedFileMetaV2">PDF &middot; Ready to analyze</small><button type="button" id="removeResumeV2"><i class="bi bi-x-lg"></i> Remove file</button></div>
+          </div>
+          <div class="resume-upload-progress d-none" id="resumeUploadProgressV2" aria-hidden="true"><span id="resumeUploadProgressBarV2"></span></div>
+          <p class="resume-field-error d-none" id="resumeErrorV2"><i class="bi bi-exclamation-circle"></i> Select a valid PDF under 5 MB.</p>
+        </section>
+      </div>
+      <div class="col-lg-6">
+        <section class="resume-ai-card resume-glass h-100">
+          <div class="resume-card-heading justify-content-between"><div class="d-flex gap-3"><span class="resume-heading-icon blue"><i class="bi bi-briefcase"></i></span><div><h2>Job Description</h2><p>Add the complete posting for a precise match</p></div></div><span class="resume-char-count"><b id="jobCharacterCountV2">{{ data.job_description|default('', true)|length }}</b> / 12,000</span></div>
+          <textarea id="jobDescriptionV2" name="job_description" maxlength="12000" placeholder="Paste the complete job description here..." required>{{ data.job_description|default('', true) }}</textarea>
+          <p class="resume-field-error d-none" id="jobErrorV2"><i class="bi bi-exclamation-circle"></i> Paste the job description to continue.</p>
+        </section>
+      </div>
+    </div>
+
+    <section class="resume-ai-card resume-glass mt-4"><div class="row g-4">
+      <div class="col-12">
+        <div class="resume-card-heading"><span class="resume-heading-icon cyan"><i class="bi bi-ui-checks-grid"></i></span><div><h2>Interview Type</h2><p>Select one preparation track</p></div></div>
+        <input type="hidden" id="interviewTypeV2" name="interview_type" value="{{ selected_type }}">
+        <input type="hidden" id="selectedDomainInput" name="domain" value="{{ selected_domain or '' }}">
+        <div class="resume-type-grid">{% for value, title, description, icon in [('technical', 'Technical', 'Concepts and systems', 'cpu'), ('hr', 'HR', 'Behavior and culture', 'people'), ('coding', 'Coding', 'Problems and logic', 'code-slash'), ('mixed', 'Mixed', 'Complete preparation', 'diagram-3')] %}<button type="button" class="resume-type-card {% if selected_type == value %}active{% endif %}" data-interview-type-v2="{{ value }}" aria-pressed="{{ 'true' if selected_type == value else 'false' }}"><span><i class="bi bi-{{ icon }}"></i></span><div><strong>{{ title }}</strong><small>{{ description }}</small></div><i class="bi bi-check-circle-fill type-check"></i></button>{% endfor %}</div>
+      </div>
+    </div></section>
+
+    <div class="resume-request-error d-none" id="resumeRequestError" role="alert"><i class="bi bi-exclamation-circle"></i><span></span></div>
+    <button type="submit" class="resume-generate-btn" id="generateInterviewV2" {% if not selected_domain %}disabled title="Please select a target domain from the Dashboard first." style="opacity: 0.6; cursor: not-allowed;"{% endif %}><span>&#128640; Analyze Resume &amp; Generate Interview</span><span class="spinner-border spinner-border-sm d-none" id="generateSpinnerV2" aria-hidden="true"></span></button>
+  </form>
+
+  <!-- REAL-TIME ANALYSIS PIPELINE STATUS BANNER -->
+  <div class="resume-pipeline-status-banner mb-4 p-4 rounded-4 resume-glass border d-none" id="resumePipelineStatusBanner" role="status" aria-live="polite">
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="spinner-grow text-primary flex-shrink-0" style="width: 1.5rem; height: 1.5rem;" id="pipelineSpinner" role="status"></div>
+        <div>
+          <h4 class="h5 fw-bold mb-0 text-main" id="pipelineStatusTitle">Analyzing your resume...</h4>
+          <span class="text-muted small" id="pipelineStatusSubtitle">Connecting to published AI analysis workflow</span>
+        </div>
+      </div>
+      <span class="badge bg-primary-subtle text-primary rounded-pill font-monospace px-3 py-1.5" id="pipelineStatusBadge">In Progress</span>
+    </div>
+    <div class="resume-stage-timeline d-flex flex-wrap gap-2" id="resumeStageTimeline">
+      <!-- Dynamic stage chips -->
+    </div>
+  </div>
+
+  <section class="resume-analysis-dashboard d-none" id="resumeAnalysisDashboard" aria-live="polite">
+    <div class="resume-dashboard-heading"><div><small>AI RESUME INTELLIGENCE</small><h2>Your Resume Analysis</h2><p>Personalized insights generated from your resume and target job description.</p></div><span><i class="bi bi-check-circle-fill"></i> Analysis complete</span></div>
+
+    <div class="row g-4 mb-4">
+      <div class="col-lg-7"><article class="resume-score-card resume-glass"><div class="resume-score-ring" id="atsScoreRing"><div><strong id="atsScoreValue">0%</strong><small>ATS SCORE</small></div></div><div><small>OVERALL MATCH</small><h3 id="atsScoreLabel">Analysis Ready</h3><p id="atsScoreExplanation">Your AI assessment will appear here.</p></div></article></div>
+      <div class="col-lg-5"><article class="job-match-card resume-glass"><span><i class="bi bi-bullseye"></i></span><small>JOB MATCH</small><strong id="jobMatchValue">0%</strong><p>Alignment with the supplied job description.</p></article></div>
+    </div>
+
+    <article class="resume-dashboard-card resume-glass mb-4"><div class="dashboard-card-title"><span class="tone-blue"><i class="bi bi-file-text"></i></span><div><small>PROFESSIONAL OVERVIEW</small><h3>Resume Summary</h3></div></div><p class="dashboard-summary" id="resumeSummaryText">Your AI-generated professional summary will appear here.</p></article>
+
+    <div class="row g-4 mb-4">
+      <div class="col-lg-6"><article class="resume-dashboard-card resume-glass h-100"><div class="dashboard-card-title"><span class="tone-green"><i class="bi bi-shield-check"></i></span><div><small>WHAT STANDS OUT</small><h3>Strong Points</h3></div></div><div class="insight-card-list positive" id="strongPointsList"></div></article></div>
+      <div class="col-lg-6"><article class="resume-dashboard-card resume-glass h-100"><div class="dashboard-card-title"><span class="tone-amber"><i class="bi bi-exclamation-triangle"></i></span><div><small>GROWTH OPPORTUNITIES</small><h3>Areas to Improve</h3></div></div><div class="insight-card-list warning" id="improvementAreasList"></div></article></div>
+    </div>
+
+    <article class="resume-dashboard-card resume-glass mb-4"><div class="dashboard-card-title"><span class="tone-violet"><i class="bi bi-puzzle"></i></span><div><small>KEYWORD GAPS</small><h3>Missing Skills</h3></div></div><div class="missing-skill-cloud" id="missingSkillsList"></div></article>
+
+    <div class="row g-4 mb-4">
+      <div class="col-lg-5"><article class="resume-dashboard-card resume-glass h-100"><div class="dashboard-card-title"><span class="tone-indigo"><i class="bi bi-magic"></i></span><div><small>RECOMMENDATIONS</small><h3>ATS Optimization Recommendations</h3></div></div><div class="optimization-list" id="atsTipsList"></div></article></div>
+      <div class="col-lg-7"><article class="resume-dashboard-card resume-glass h-100"><div class="dashboard-card-title"><span class="tone-cyan"><i class="bi bi-bar-chart"></i></span><div><small>DETAILED BREAKDOWN</small><h3>Category Scores</h3></div></div><div class="resume-category-grid" id="categoryScoresList"></div></article></div>
+    </div>
+
+    <article class="readiness-card resume-glass mb-4"><div class="readiness-icon"><i class="bi bi-rocket-takeoff"></i></div><div><small>INTERVIEW READINESS</small><h3 id="readinessLabel">Ready</h3><p id="readinessExplanation">Your personalized readiness assessment will appear here.</p></div><span id="readinessBadge">READY</span></article>
+
+    <div class="resume-next-steps-heading"><small>RECOMMENDED NEXT STEPS</small></div>
+    <div class="resume-dashboard-actions">
+      <a href="{{ url_for('interview_assessment') }}" class="resume-action-primary"><i class="bi bi-stars"></i> Start Personalized AI Interview</a>
+      <button type="button" class="resume-action-secondary" id="uploadImprovedResume"><i class="bi bi-cloud-arrow-up"></i> Upload Improved Resume</button>
+      <button type="button" class="resume-action-secondary" id="analyzeAnotherResume"><i class="bi bi-arrow-repeat"></i> Analyze Another Resume</button>
+    </div>
+  </section>
+</main>
+
+<script>
+  window.__INITIAL_ANALYSIS__ = {{ analysis | tojson if analysis else "null" }};
+  window.__INITIAL_RECORD_ID__ = {{ latest_record.id if latest_record else "null" }};
+</script>
+{% endblock %}

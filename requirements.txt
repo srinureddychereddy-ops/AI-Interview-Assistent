@@ -1,0 +1,10 @@
+Flask
+Flask-SQLAlchemy
+Flask-Login
+Flask-Bcrypt
+Flask-Mail
+python-dotenv
+PyMuPDF
+google-generativeai
+requests
+Werkzeug

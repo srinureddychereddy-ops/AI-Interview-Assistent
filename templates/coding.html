@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}Coding Round{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/coding.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid coding-round-page">
+    <!-- Top Header -->
+    <div class="mb-4">
+        <h1 class="section-title">Coding Round</h1>
+        <p class="text-muted mb-0">Practice coding interview questions with an online compiler.</p>
+    </div>
+
+    <div class="row g-4">
+        <!-- Left Column: Problem Statement -->
+        <div class="col-xl-4 col-lg-12">
+            <div class="card-glass h-100">
+                <div class="problem-statement-container">
+                    <div class="d-flex gap-3 mb-4">
+                        <div class="flex-grow-1">
+                            <label for="languageSelector" class="form-label">Language</label>
+                            <select id="languageSelector" class="form-select form-control-premium">
+                                <option value="python" selected>Python</option>
+                                <option value="cpp">C++</option>
+                                <option value="java">Java</option>
+                                <option value="c">C</option>
+                            </select>
+                        </div>
+                        <div class="flex-grow-1">
+                            <label for="difficultySelector" class="form-label">Difficulty</label>
+                            <select id="difficultySelector" class="form-select form-control-premium">
+                                <option value="Easy">Easy</option>
+                                <option value="Medium" selected>Medium</option>
+                                <option value="Hard">Hard</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <h5 class="card-heading">Problem Statement</h5>
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="problem-title">Two Sum</h4>
+                        <span class="badge bg-warning text-dark">Medium</span>
+                    </div>
+
+                    <div class="problem-meta">
+                        <span><i class="bi bi-clock"></i> Time Limit: <strong>1s</strong></span>
+                        <span><i class="bi bi-memory"></i> Memory Limit: <strong>256MB</strong></span>
+                    </div>
+
+                    <div class="problem-section">
+                        <h6>Description</h6>
+                        <p>Given an array of integers `nums` and an integer `target`, return indices of the two numbers such that they add up to `target`.</p>
+                        <p>You may assume that each input would have exactly one solution, and you may not use the same element twice.</p>
+                    </div>
+
+                    <div class="problem-section">
+                        <h6>Input Format</h6>
+                        <p>The first line contains an integer `n`, the size of the array. The second line contains `n` space-separated integers. The third line contains the `target` integer.</p>
+                    </div>
+
+                    <div class="problem-section">
+                        <h6>Output Format</h6>
+                        <p>Return the two indices as a space-separated string.</p>
+                    </div>
+
+                    <div class="problem-section">
+                        <h6>Constraints</h6>
+                        <ul>
+                            <li>`2 <= nums.length <= 10^4`</li>
+                            <li>`-10^9 <= nums[i] <= 10^9`</li>
+                            <li>`-10^9 <= target <= 10^9`</li>
+                            <li>Only one valid answer exists.</li>
+                        </ul>
+                    </div>
+
+                    <div class="problem-section">
+                        <h6>Sample Input</h6>
+                        <pre class="code-block"><code>2 7 11 15
+9</code></pre>
+                    </div>
+
+                    <div class="problem-section">
+                        <h6>Sample Output</h6>
+                        <pre class="code-block"><code>0 1</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Column: Editor & Console -->
+        <div class="col-xl-5 col-lg-7">
+            <div class="card-glass d-flex flex-column h-100">
+                <div id="editor-container" class="flex-grow-1"></div>
+                <div class="editor-actions">
+                    <button id="resetBtn" class="btn btn-glass"><i class="bi bi-arrow-counterclockwise me-2"></i>Reset</button>
+                    <button id="runBtn" class="btn btn-glass"><i class="bi bi-play-fill me-2"></i>Run Code</button>
+                    <button id="submitBtn" class="btn btn-premium"><i class="bi bi-cloud-upload me-2"></i>Submit Solution</button>
+                </div>
+            </div>
+
+            <div class="card-glass mt-4">
+                <div class="console-container">
+                    <ul class="nav nav-tabs console-tabs" id="consoleTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="custom-input-tab" data-bs-toggle="tab" data-bs-target="#custom-input" type="button" role="tab">Custom Input</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="output-tab" data-bs-toggle="tab" data-bs-target="#output" type="button" role="tab">Output</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="status-tab" data-bs-toggle="tab" data-bs-target="#status" type="button" role="tab">Submission Status</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content" id="consoleTabsContent">
+                        <div class="tab-pane fade show active" id="custom-input" role="tabpanel">
+                            <textarea id="customInputArea" class="console-textarea" placeholder="Enter your custom input here..."></textarea>
+                        </div>
+                        <div class="tab-pane fade" id="output" role="tabpanel">
+                            <pre id="outputArea" class="console-pre"><code>Click "Run Code" to see output here.</code></pre>
+                        </div>
+                        <div class="tab-pane fade" id="status" role="tabpanel">
+                            <pre id="statusArea" class="console-pre"><code>Submit your solution to see the status.</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Status -->
+        <div class="col-xl-3 col-lg-5">
+            <div class="card-glass mb-4">
+                <h5 class="card-heading">Current Question</h5>
+                <ul class="summary-list-report">
+                    <li><span>Question:</span><strong>#1024</strong></li>
+                    <li><span>Difficulty:</span><strong>Medium</strong></li>
+                    <li><span>Language:</span><strong>Python</strong></li>
+                </ul>
+            </div>
+            <div class="card-glass mb-4">
+                <h5 class="card-heading">Status</h5>
+                <div class="d-flex justify-content-between small mb-1">
+                    <span class="text-muted">Timer</span>
+                    <span id="timer" class="text-main fw-semibold">00:00</span>
+                </div>
+                <div class="progress" style="height: 6px;">
+                    <div id="timer-progress" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                </div>
+                <hr class="my-3 border-glass">
+                <div class="d-flex justify-content-between small mb-1">
+                    <span class="text-muted">Visible Test Cases</span>
+                    <span class="text-main fw-semibold">0 / 2</span>
+                </div>
+                 <div class="progress" style="height: 6px;">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
+                </div>
+            </div>
+             <div class="card-glass">
+                <h5 class="card-heading">Score</h5>
+                <div class="report-score text-center">0<span class="report-score-total">/ 100</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Section: Submission History -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card-glass">
+                <h5 class="card-heading">Submission History</h5>
+                <div class="table-responsive">
+                    <table class="table table-borderless submission-history-table">
+                        <thead>
+                            <tr>
+                                <th>Attempt</th>
+                                <th>Language</th>
+                                <th>Runtime</th>
+                                <th>Memory</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>#1</td>
+                                <td>Python</td>
+                                <td>78ms</td>
+                                <td>17.2 MB</td>
+                                <td><span class="badge bg-danger">Wrong Answer</span></td>
+                            </tr>
+                            <tr>
+                                <td>#2</td>
+                                <td>Python</td>
+                                <td>64ms</td>
+                                <td>17.1 MB</td>
+                                <td><span class="badge bg-success">Accepted</span></td>
+                            </tr>
+                            <tr>
+                                <td colspan="5" class="text-center text-muted pt-4">No more submissions.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{# Monaco Editor is a large library, using a CDN is efficient #}
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.34.1/min/vs/loader.js"></script>
+<script src="{{ url_for('static', filename='js/coding.js') }}"></script>
+{% endblock %}

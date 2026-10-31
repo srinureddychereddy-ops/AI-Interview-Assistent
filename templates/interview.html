@@ -1,0 +1,508 @@
+{% extends "base.html" %}
+
+{% set full_page_layout = True %}
+{% block title %}Aptitude Assessment — Interview.ai{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/interview.css') }}">
+<style>
+/* MCQ distraction-free workspace refinements */
+.instruction-heading {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+    margin-top: 32px;
+}
+.info-list {
+    background: var(--bg-card);
+    border: 1px solid var(--border-base);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 24px;
+}
+.info-item {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+.info-label {
+    font-weight: 600;
+    color: var(--text-muted);
+}
+.info-value {
+    color: var(--text-primary);
+    font-weight: 700;
+}
+.instruction-checklist {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.instruction-checklist li {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    display: flex;
+    gap: 8px;
+    align-items: start;
+}
+.instruction-checklist li::before {
+    content: "•";
+    color: var(--color-primary);
+    font-weight: bold;
+}
+.question-navigator-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 8px;
+    margin-top: 14px;
+}
+.question-number-btn {
+    height: 38px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border-base);
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--t-fast);
+}
+.question-number-btn:hover {
+    border-color: var(--border-strong);
+    background: var(--bg-hover);
+}
+.question-number-btn.active {
+    background: var(--color-primary-light);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+.question-number-btn.answered {
+    background: var(--color-success-light);
+    border-color: var(--color-success);
+    color: var(--color-success);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid interview-page position-relative fade-in">
+
+    <div class="distraction-free-container">
+
+        <!-- View 1: Interview Information -->
+        <div id="interview-info-view">
+          <div class="voice-interview-onboarding">
+            <aside class="voice-ai-presence" aria-label="AI interviewer preview">
+                <span class="product-kicker"><i class="bi bi-stars"></i> Gemini interviewer online</span>
+                <div class="voice-avatar-stage" aria-hidden="true">
+                    <div class="voice-avatar-halo"></div><div class="voice-avatar-core"><i class="bi bi-cpu-fill"></i></div>
+                    <div class="voice-wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                </div>
+                <h1>Practice in a space that <span>feels real.</span></h1>
+                <p>Your AI interviewer adapts to {{ domain }}, tracks your pace, and turns every response into actionable feedback.</p>
+                <div class="voice-signal-row"><span><i class="bi bi-mic"></i><b>Audio</b><small>Checked next</small></span><span><i class="bi bi-shield-check"></i><b>Private</b><small>Secure session</small></span><span><i class="bi bi-speedometer2"></i><b>10:00</b><small>Session timer</small></span></div>
+            </aside>
+            <section class="interview-guidance-panel">
+            <div class="mb-4 pb-2">
+                <p class="section-eyebrow mb-1">Assessment briefing</p>
+                <h2 class="display-6 fw-800 text-main" style="letter-spacing:-0.04em;">Before we begin</h2>
+                <p class="text-muted mt-2">Review the session parameters and confirm your environment.</p>
+            </div>
+
+            <h3 class="instruction-heading"><i class="bi bi-info-circle-fill text-primary me-2"></i>Assessment Information</h3>
+            <div class="info-list mb-4">
+                <div class="info-item"><span class="info-label">Domain:</span> <span class="info-value">{{ domain }}</span></div>
+                <div class="info-item"><span class="info-label">Difficulty:</span> <span class="info-value">{{ difficulty }}</span></div>
+                <div class="info-item"><span class="info-label">Total Questions:</span> <span class="info-value">20 MCQs</span></div>
+                <div class="info-item"><span class="info-label">Duration Limit:</span> <span class="info-value">10 Minutes</span></div>
+                <div class="info-item"><span class="info-label">Passing Target:</span> <span class="info-value">12 / 20 (60%)</span></div>
+                <div class="info-item"><span class="info-label">Assessor Engine:</span> <span class="info-value">Gemini AI</span></div>
+            </div>
+
+            <h3 class="instruction-heading"><i class="bi bi-shield-check-fill text-primary me-2"></i>General Instructions</h3>
+            <ul class="instruction-checklist mb-5">
+                <li>The interview contains <strong>20 multiple-choice questions</strong> targeting core domain skills.</li>
+                <li>The total duration for the assessment is fixed at <strong>10 minutes</strong>.</li>
+                <li>Each question has <strong>only one correct answer</strong>.</li>
+                <li>There is <strong>no negative marking</strong> for incorrect submissions.</li>
+                <li>You can move back and forth between questions using the <strong>Previous</strong>, <strong>Next</strong> or navigator grid.</li>
+                <li>The countdown timer starts immediately once the simulation is initialized.</li>
+                <li>Your <strong>webcam feed</strong> is required and will be monitored in the workspace.</li>
+                <li>Do not reload the browser page or navigate away during the assessment run.</li>
+            </ul>
+
+            <div class="instruction-footer-actions text-center border-top pt-4" style="border-color:var(--border-base) !important;">
+                <div class="form-check form-switch d-inline-flex align-items-center justify-content-center mb-4">
+                    <input class="form-check-input" type="checkbox" role="switch" id="instructions-read-checkbox">
+                    <label class="form-check-label ms-2.5 small fw-semibold" for="instructions-read-checkbox">I have read, understood, and agree to follow all instructions.</label>
+                </div>
+                <div class="d-flex justify-content-center gap-3">
+                    <a href="{{ url_for('interview_assessment') }}" class="btn btn-glass px-4">Back to Roles</a>
+                    <button id="start-checks-btn" class="btn btn-premium px-5 py-2.5" disabled>
+                        Continue to System Check
+                    </button>
+                </div>
+            </div>
+            </section>
+          </div>
+        </div>
+
+        <!-- View 2: Hardware Check (Redesigned System Readiness Screen) -->
+        <div id="hardware-check-view" class="d-none">
+            <div class="card-glass p-4 p-md-5">
+                <div class="text-center pb-4 mb-4" style="border-bottom:1px solid var(--border-base);">
+                    <span class="badge bg-primary bg-opacity-10 text-primary mb-2 font-monospace px-3 py-1.5 rounded-pill">
+                        <i class="bi bi-shield-check me-1.5"></i>PROCTORED ASSESSMENT READINESS
+                    </span>
+                    <h2 class="fw-800 text-main display-6 mb-1" style="letter-spacing:-0.03em;">System readiness</h2>
+                    <p class="text-muted small mb-0">Verify your camera, microphone, and network connection before initializing the assessment environment.</p>
+                </div>
+                <div class="row g-4 align-items-stretch">
+                    <!-- Left: Large Camera Preview Card -->
+                    <div class="col-lg-6 d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="card-heading small text-uppercase font-monospace text-muted fw-bold">
+                                <i class="bi bi-camera-video-fill me-1.5 text-primary"></i>Camera Stream &amp; Frame Test
+                            </span>
+                            <span id="camera-live-pill" class="badge bg-secondary bg-opacity-10 text-secondary font-monospace d-none">
+                                ● OFF
+                            </span>
+                        </div>
+                        <!-- Camera Selector Row (Shown if multiple cameras detected) -->
+                        <div id="camera-select-row" class="d-flex justify-content-between align-items-center mb-2 d-none">
+                            <label for="camera-source-select" class="small text-muted font-monospace mb-0" style="font-size:0.75rem;">
+                                <i class="bi bi-camera me-1"></i>Camera Source:
+                            </label>
+                            <select id="camera-source-select" class="form-select form-select-sm font-monospace w-auto py-0 px-2" style="max-width:240px; font-size:0.75rem; background:var(--bg-card); color:var(--text-primary); border-color:var(--border-base);">
+                            </select>
+                        </div>
+                        <div class="webcam-preview position-relative flex-grow-1 d-flex align-items-center justify-content-center" style="background:#090d16; border-radius:var(--radius-md); border:1px solid var(--border-base); overflow:hidden; min-height:240px;">
+                            <video id="webcam-feed" autoplay muted playsinline class="w-100 h-100" style="object-fit:cover;"></video>
+                            
+                            <!-- Video Placeholder & Loading Overlay -->
+                            <div id="webcam-placeholder" class="webcam-placeholder-content d-flex flex-column align-items-center justify-content-center position-absolute inset-0 text-white bg-dark bg-opacity-85 p-3 text-center">
+                                <div class="spinner-border spinner-border-sm text-primary mb-2" id="camera-spin-loader" role="status"></div>
+                                <i class="bi bi-camera-video-off-fill fs-2 text-warning mb-2 d-none" id="camera-off-icon"></i>
+                                <p id="webcam-placeholder-text" class="mb-2 small text-white-50">Initializing camera stream &amp; frame inspection...</p>
+                                <button type="button" id="camera-retry-btn" class="btn btn-sm btn-outline-primary font-monospace mt-1 d-none">
+                                    <i class="bi bi-camera-video me-1"></i> Allow &amp; Retry Camera
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Status Verification Cards -->
+                    <div class="col-lg-6 d-flex flex-column justify-content-between">
+                        <div>
+                            <span class="card-heading small text-uppercase font-monospace text-muted fw-bold d-block mb-3">
+                                <i class="bi bi-shield-check me-1.5 text-primary"></i>Hardware &amp; Network Checks
+                            </span>
+                            
+                            <!-- Camera Status Row -->
+                            <div class="p-3 mb-3 rounded-3 border" id="camera-check-box" style="background: var(--bg-hover); border-color: var(--border-base) !important;">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="fw-bold small text-main"><i class="bi bi-camera-video me-2 text-primary"></i>Camera Access</span>
+                                    <span id="camera-status-badge" class="badge bg-secondary bg-opacity-10 text-secondary font-monospace">○ Waiting for permission...</span>
+                                </div>
+                                <small id="camera-status-desc" class="text-muted d-block" style="font-size: 0.78rem;">Verifying video stream and non-black frame rendering...</small>
+                            </div>
+
+                            <!-- Microphone Status Row with Audio Level Meter -->
+                            <div class="p-3 mb-3 rounded-3 border" id="mic-check-box" style="background: var(--bg-hover); border-color: var(--border-base) !important;">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="fw-bold small text-main"><i class="bi bi-mic me-2 text-primary"></i>Microphone Input</span>
+                                    <span id="mic-status-badge" class="badge bg-secondary bg-opacity-10 text-secondary font-monospace">○ Waiting for permission...</span>
+                                </div>
+                                <small id="mic-status-desc" class="text-muted d-block mb-2" style="font-size: 0.78rem;">Please say: <strong>"Hello Interview.ai"</strong></small>
+                                <div class="progress mb-1" style="height: 6px; background: rgba(0,0,0,0.12); border-radius: 6px;">
+                                    <div id="mic-level-bar" class="progress-bar bg-success" role="progressbar" style="width: 0%; transition: width 0.1s ease;"></div>
+                                </div>
+                            </div>
+
+                            <!-- Network Status Row -->
+                            <div class="p-3 mb-3 rounded-3 border" id="network-check-box" style="background: var(--bg-hover); border-color: var(--border-base) !important;">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold small text-main"><i class="bi bi-wifi me-2 text-primary"></i>Network Latency</span>
+                                    <span id="network-status-badge" class="badge bg-warning text-dark font-monospace">Checking...</span>
+                                </div>
+                            </div>
+
+                            <div id="permission-alert" class="alert alert-danger py-2 px-3 small d-none mb-0">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                <span id="permission-alert-text">Permissions blocked. Please allow camera and microphone access in browser settings.</span>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-3 pt-2">
+                            <button type="button" id="mic-retry-btn" class="btn btn-sm btn-outline-secondary d-none">
+                                <i class="bi bi-mic-fill me-1"></i> Test Microphone Again
+                            </button>
+                            <button type="button" id="hardware-retry-btn" class="btn btn-sm btn-primary d-none ms-auto">
+                                <i class="bi bi-arrow-repeat me-1"></i> Retry Hardware Check
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Action & System Status Banner -->
+                <div class="text-center mt-4 pt-4" style="border-top:1px solid var(--border-base);">
+                    <div id="proctor-message" class="alert alert-info py-2.5 px-4 rounded-3 small mb-3">
+                        Camera, microphone, and network checks must pass before starting the assessment.
+                    </div>
+                    <button id="start-interview-btn" class="btn btn-premium btn-lg px-5 py-3 start-btn-animation" disabled>
+                        <i class="bi bi-play-circle-fill me-1.5"></i> Start MCQ Assessment
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- View 3: Premium Live Interview Workspace (Initially Hidden) -->
+        <div id="interview-mcq-view" class="d-none ai-interview-workspace">
+            <div class="interview-aurora" aria-hidden="true"><span></span><span></span><span></span></div>
+            
+            <!-- Sticky Header -->
+            <header class="interview-session-header">
+                <div class="interview-session-brand" aria-label="Interview.ai">
+                    <span><i class="bi bi-cpu-fill"></i></span><b>Interview.ai</b>
+                </div>
+                <div class="interview-session-context">
+                    <span class="fw-bold text-main">{{ domain }}</span><i></i><span>{{ difficulty }}</span>
+                </div>
+                <div class="interview-session-tools">
+                    <span class="network-live"><i></i> Network stable</span>
+                    <span class="interview-header-timer"><i class="bi bi-clock"></i><strong id="timer">10:00</strong></span>
+                    <button type="button" class="exit-interview" id="exitInterviewButton"><i class="bi bi-box-arrow-right me-1"></i><span>Exit interview</span></button>
+                </div>
+            </header>
+
+            <div class="interview-three-column">
+                <!-- LEFT COLUMN: Candidate Panel -->
+                <aside class="interview-progress-panel interview-glass" aria-labelledby="progressPanelTitle">
+                    <div class="candidate-identity">
+                        <div class="candidate-avatar-wrap">
+                            <img src="{{ url_for('static', filename='uploads/profile/' + (current_user.profile.profile_image_filename if current_user.profile and current_user.profile.profile_image_filename else 'default.png')) }}" alt="{{ current_user.username }}" data-initial="{{ current_user.username[:1] }}" onerror="handleAvatarError(this)">
+                            <i></i>
+                        </div>
+                        <div>
+                            <small>CANDIDATE</small>
+                            <h2 id="progressPanelTitle">{{ (current_user.profile.first_name if current_user.profile else None) or current_user.username }}</h2>
+                            <span><i></i> Interview in progress</span>
+                        </div>
+                    </div>
+
+                    <div class="interview-progress-orbit" id="interviewProgressRing" style="--progress:5">
+                        <div><strong id="progressPercent">5%</strong><small>COMPLETE</small></div>
+                    </div>
+
+                    <div class="progress-stat-grid">
+                        <article><span><i class="bi bi-check2-circle"></i></span><div><small>Answered</small><strong id="answeredQuestions">0</strong></div></article>
+                        <article><span><i class="bi bi-hourglass-split"></i></span><div><small>Remaining</small><strong id="remainingQuestions">20</strong></div></article>
+                        <article class="timer-stat"><span><i class="bi bi-list-ol"></i></span><div><small>Current question</small><strong><b id="compactCurrentQuestion">1</b> / 20</strong></div></article>
+                        <article><span><i class="bi bi-shield-lock"></i></span><div><small>Current score</small><strong id="currentScoreSignal">Locked</strong></div></article>
+                    </div>
+
+                    <div class="confidence-block">
+                        <div><span>Confidence signal</span><strong id="confidenceValue">Building</strong></div>
+                        <div class="confidence-track"><span id="confidenceBar" style="width:18%"></span></div>
+                        <p>Updates as you progress through the assessment.</p>
+                    </div>
+
+                    <!-- System & Proctoring Panel -->
+                    <div class="proctoring-status-panel mt-3 p-3 border rounded-3" style="font-size: 0.8rem; border-color: var(--border-base) !important; background: var(--bg-hover) !important;">
+                        <h4 class="fw-bold mb-2 small text-uppercase" style="letter-spacing: 0.05em; color: var(--text-muted);">System &amp; Proctoring</h4>
+                        <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: var(--border-base) !important;">
+                            <span>Camera</span>
+                            <span id="proctor-panel-camera" class="text-danger fw-semibold">❌ Inactive</span>
+                        <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: var(--border-base) !important;">
+                            <span>Microphone</span>
+                            <span id="proctor-panel-mic" class="text-danger fw-semibold">❌ Inactive</span>
+                        </div>
+                            <span>Network</span>
+                            <span id="proctor-panel-network" class="text-success fw-semibold">✓ Stable</span>
+                        </div>
+                        <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: var(--border-base) !important;">
+                            <span>Fullscreen</span>
+                            <span id="proctor-panel-fullscreen" class="text-success fw-semibold">✓ Active</span>
+                        </div>
+                        <div class="d-flex justify-content-between py-1" style="border-color: var(--border-base) !important;">
+                            <span>Warnings</span>
+                            <span id="proctor-panel-warnings" class="text-warning fw-semibold">0 / 3</span>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- CENTER COLUMN: Main Question Area -->
+                <main class="interview-conversation-panel">
+                    <!-- Compact AI Interviewer Banner -->
+                    <section class="ai-interviewer-presence interview-glass py-2.5 px-3" aria-label="AI interviewer">
+                        <div class="live-ai-avatar"><div class="avatar-rings"><i></i><i></i></div><span><i class="bi bi-stars"></i></span></div>
+                        <div class="ai-greeting">
+                            <div><span><i></i> AI INTERVIEWER</span><div class="typing-indicator" aria-label="AI is speaking"><i></i><i></i><i></i></div></div>
+                            <p class="mb-0">Hello {{ (current_user.profile.first_name if current_user.profile and current_user.profile.first_name else current_user.username)|title }} <span aria-hidden="true">👋</span> — I’m ready when you are.</p>
+                        </div>
+                    </section>
+
+                    <!-- Main Question Card -->
+                    <section class="live-question-card interview-glass" id="liveQuestionCard" aria-live="polite">
+                        <header>
+                            <div class="question-badges">
+                                <span class="question-number-badge">QUESTION <b id="currentQuestion">1</b> / 20</span>
+                                <span class="difficulty-badge">{{ difficulty }}</span>
+                                <span class="domain-badge">{{ domain }}</span>
+                            </div>
+                            <span class="autosave-signal"><i class="bi bi-cloud-check me-1"></i> Autosaved</span>
+                        </header>
+
+                        <div class="question-prompt">
+                            <span class="prompt-mark"><i class="bi bi-chat-square-quote-fill"></i></span>
+                            <h1 id="questionText">Loading your first question…</h1>
+                        </div>
+
+                        <!-- 2x2 Answer Grid -->
+                        <div class="options premium-options">
+                            <div class="option-card"><input type="radio" name="answer" id="radioA" value="A"><label for="radioA" id="optionA"><kbd>A</kbd><span>Option A</span><i class="bi bi-check-circle-fill"></i></label></div>
+                            <div class="option-card"><input type="radio" name="answer" id="radioB" value="B"><label for="radioB" id="optionB"><kbd>B</kbd><span>Option B</span><i class="bi bi-check-circle-fill"></i></label></div>
+                            <div class="option-card"><input type="radio" name="answer" id="radioC" value="C"><label for="radioC" id="optionC"><kbd>C</kbd><span>Option C</span><i class="bi bi-check-circle-fill"></i></label></div>
+                            <div class="option-card"><input type="radio" name="answer" id="radioD" value="D"><label for="radioD" id="optionD"><kbd>D</kbd><span>Option D</span><i class="bi bi-check-circle-fill"></i></label></div>
+                        </div>
+
+                        <!-- Question Progress Track -->
+                        <div class="question-progress-container mt-4 pt-2">
+                            <div class="d-flex justify-content-between align-items-center mb-1 small text-muted font-monospace">
+                                <span>Question <b id="compactCurrentQuestion">1</b> of 20</span>
+                                <span id="progressPercent">5%</span>
+                            </div>
+                            <div class="question-progress-track"><span id="progressBar" style="width:5%"></span></div>
+                        </div>
+
+                        <!-- Navigation Footer -->
+                        <footer class="question-actions">
+                            <button id="previousBtn" class="interview-back-button"><i class="bi bi-arrow-left me-1"></i><span>Previous</span></button>
+                            <span class="question-step-indicator font-monospace small text-muted">Question <b id="compactCurrentQuestion">1</b> of 20</span>
+                            <button id="nextBtn" class="interview-next-button"><span>Next question</span><i class="bi bi-arrow-right ms-1"></i></button>
+                            <button id="submitInterview" class="interview-submit-button"><span>Complete interview</span><i class="bi bi-stars ms-1"></i></button>
+                        </footer>
+
+                        <div class="text-center mt-2">
+                            <span class="keyboard-guide text-muted small"><kbd>1–4</kbd> to select &bull; <kbd>Enter</kbd> to continue</span>
+                        </div>
+                    </section>
+                </main>
+
+                <!-- RIGHT COLUMN: Real-time Insights -->
+                <aside class="interview-insights-panel interview-glass" aria-labelledby="insightsTitle">
+                    <header><div><small>REAL-TIME SIGNALS</small><h2 id="insightsTitle">AI Insights</h2></div><span class="insight-live-dot"><i></i> LIVE</span></header>
+                    
+                    <div class="insight-card-stack">
+                        <article><span class="insight-icon violet"><i class="bi bi-speedometer2"></i></span><div><small>Difficulty</small><strong>{{ difficulty }}</strong><p>Adaptive challenge level</p></div></article>
+                        <article><span class="insight-icon cyan"><i class="bi bi-stopwatch"></i></span><div><small>Expected answer time</small><strong>30 seconds</strong><p>Stay clear and decisive</p></div></article>
+                        <article class="ai-hint-card"><span class="insight-icon amber"><i class="bi bi-lightbulb"></i></span><div><small>AI hint</small><strong id="liveHint">Read every option before deciding.</strong></div></article>
+                        <article><span class="insight-icon emerald"><i class="bi bi-braces"></i></span><div><small>Skill being tested</small><strong>{{ domain }}</strong><p>Technical reasoning</p></div></article>
+                    </div>
+
+                    <div class="prediction-card">
+                        <div><small>PERFORMANCE PREDICTION</small><strong id="predictionLabel">Building your signal</strong></div>
+                        <div class="prediction-chart" aria-hidden="true"><i style="height:25%"></i><i style="height:36%"></i><i style="height:31%"></i><i style="height:52%"></i><i style="height:46%"></i><i style="height:68%"></i><i style="height:74%"></i></div>
+                    </div>
+
+                    <div class="live-signal-meters">
+                        <div><p><span>Communication score</span><b id="communicationScore">72%</b></p><div><span id="communicationBar" style="width:72%"></span></div></div>
+                        <div><p><span>Technical confidence</span><b id="technicalScore">18%</b></p><div><span id="technicalBar" style="width:18%"></span></div></div>
+                    </div>
+                </aside>
+            </div>
+
+            <!-- Fixed Floating Live Proctor Feed (Bottom-Right Corner) -->
+            <div id="floating-webcam-card" class="floating-webcam-card d-none">
+                <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom" style="border-color: rgba(255,255,255,0.1) !important; background: rgba(15,23,42,0.95);">
+                    <span class="small fw-bold font-monospace text-uppercase text-light d-flex align-items-center gap-1.5" style="font-size:0.68rem; letter-spacing:0.04em;">
+                        <i class="bi bi-camera-video-fill text-primary"></i> PROCTOR FEED
+                    </span>
+                    <span id="webcam-status-pill" class="webcam-status-pill badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-0.5" style="font-size:0.62rem;">
+                        <span id="webcam-status-text">Camera Active</span>
+                    </span>
+                </div>
+                
+                <div class="floating-webcam-body position-relative">
+                    <video id="floating-webcam-feed" autoplay muted playsinline></video>
+                    
+                    <div id="floating-webcam-loading" class="floating-webcam-overlay d-flex flex-column align-items-center justify-content-center position-absolute inset-0 bg-dark bg-opacity-75 text-white d-none">
+                        <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
+                        <span class="small font-monospace" style="font-size: 0.65rem;">Initializing...</span>
+                    </div>
+
+                    <div id="floating-webcam-error" class="floating-webcam-overlay d-flex flex-column align-items-center justify-content-center position-absolute inset-0 bg-dark bg-opacity-90 text-center p-2 d-none">
+                        <i class="bi bi-exclamation-triangle-fill text-warning mb-1"></i>
+                        <span id="floating-webcam-error-msg" class="small text-white-50 mb-2" style="font-size: 0.65rem;">Blocked</span>
+                        <button type="button" id="retry-webcam-btn" class="btn btn-primary btn-xs py-0.5 px-2 font-monospace" style="font-size: 0.65rem;">Retry</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    <!-- Proctoring Disconnect/Pause Overlay -->
+    <div id="proctor-pause-overlay" class="d-none position-fixed d-flex align-items-center justify-content-center" style="top: 0; left: 0; width: 100vw; height: 100vh; z-index: 999999 !important; background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(6px);">
+        <div class="card p-4 text-center shadow-lg" style="max-width: 460px; border-radius: var(--radius-lg); background: var(--bg-card); border: 1px solid var(--border-base); color: var(--text-primary);">
+            <div class="mb-3 text-danger">
+                <i class="bi bi-camera-video-off-fill" style="font-size: 3rem; color: #ef4444 !important;"></i>
+            </div>
+            <h2 class="fw-bold mb-2 text-main" style="font-size: 1.5rem; color: var(--text-primary) !important;">CAMERA REQUIRED</h2>
+            <p id="proctor-pause-message" class="text-muted small mb-4" style="font-size: 0.95rem; line-height: 1.5;">Your camera is currently off or disconnected. Please turn on your camera to continue the interview.</p>
+            
+            <div class="d-flex justify-content-center gap-3 mb-4 p-3 rounded-3" style="background: rgba(0, 0, 0, 0.04); border: 1px solid var(--border-base);">
+                <div class="text-center">
+                    <small class="d-block text-muted">Camera</small>
+                    <span id="proctor-pause-camera-status" class="fw-bold text-danger">⚠ Disconnected</span>
+                </div>
+                <div class="vr" style="opacity: 0.15;"></div>
+                <div class="text-center">
+                    <small class="d-block text-muted">Microphone</small>
+                    <span id="proctor-pause-mic-status" class="fw-bold text-success">✓ Active</span>
+                </div>
+            </div>
+
+            <button type="button" id="proctor-reconnect-btn" class="btn btn-primary w-100 py-2.5 fw-bold" style="background: linear-gradient(135deg, #4f46e5, #7c3aed); border: none; border-radius: 10px;">
+                <i class="bi bi-camera-video me-1.5"></i> Enable Camera Again
+            </button>
+        </div>
+    </div>
+
+    <!-- Exit Interview Confirmation Modal -->
+    <div id="exit-dialog" class="d-none position-fixed d-flex align-items-center justify-content-center" style="top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1000005 !important; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px);">
+        <div class="card p-4 text-center shadow-lg" style="max-width: 440px; border-radius: var(--radius-lg); background: var(--bg-card); border: 1px solid var(--border-base); color: var(--text-primary);">
+            <div class="mb-3 text-warning">
+                <i class="bi bi-exclamation-circle-fill" style="font-size: 2.5rem; color: #f59e0b;"></i>
+            </div>
+            <h3 class="fw-bold mb-2 text-main" style="font-size: 1.35rem; color: var(--text-primary) !important;">Leave Interview?</h3>
+            <p class="text-muted small mb-4" style="font-size: 0.9rem; line-height: 1.5;">Your current progress may be lost. Are you sure you want to exit?</p>
+            <div class="d-flex gap-2">
+                <button type="button" id="continueInterviewButton" data-continue-interview class="btn btn-outline-secondary w-50 py-2 fw-semibold">Continue Interview</button>
+                <button type="button" id="confirmInterviewExit" class="btn btn-danger w-50 py-2 fw-semibold">Exit Interview</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fullscreen Required Pause Overlay -->
+    <div id="fullscreen-pause-overlay" class="d-none position-fixed d-flex align-items-center justify-content-center" style="top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1000000 !important; background: rgba(15, 23, 42, 0.95) !important;">
+        <div class="card p-5 text-center" style="max-width: 480px; border-radius: var(--radius-lg); background: var(--bg-card); border: 1px solid var(--border-base); color: var(--text-primary);">
+            <span class="text-warning mb-3"><i class="bi bi-fullscreen" style="font-size: 3rem; color: var(--color-warning) !important;"></i></span>
+            <h2 class="fw-bold mb-2 text-main" style="color: var(--text-primary) !important;">FULLSCREEN REQUIRED</h2>
+            <p class="text-muted small mb-4">Please return to fullscreen mode to continue the assessment.</p>
+            <button type="button" id="fullscreen-restore-btn" class="btn btn-premium px-4 py-2 w-100">
+                <i class="bi bi-arrows-fullscreen me-1.5"></i> Enter Fullscreen
+            </button>
+        </div>
+    </div>
+
+</div>
+
+<script src="{{ url_for('static', filename='js/interview.js') }}"></script>
+{% endblock %}

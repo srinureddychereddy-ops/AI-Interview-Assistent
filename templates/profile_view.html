@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}Profile — Interview.ai{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0 fade-in">
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-start mb-5">
+        <div>
+            <p class="section-eyebrow mb-1">Account</p>
+            <h1 class="section-title mb-1">Profile</h1>
+            <p class="text-muted" style="font-size:0.875rem;">Your personal information and account statistics.</p>
+        </div>
+        <a href="{{ url_for('profile_edit') }}" class="btn btn-premium">
+            <i class="bi bi-pencil-square me-1"></i> Edit Profile
+        </a>
+    </div>
+
+    <div class="profile-page-container">
+
+        <!-- Profile Hero Card -->
+        <div class="profile-hero mb-4">
+            <div class="row align-items-center gy-3">
+                <div class="col-auto">
+                    <img class="profile-picture-view"
+                         src="{{ url_for('static', filename='uploads/profile/' + (profile.profile_image_filename or 'default.png')) }}"
+                         alt="{{ profile.first_name or current_user.username }}" data-initial="{{ (profile.first_name or current_user.username)[:1] }}" onerror="handleAvatarError(this)">
+                </div>
+                <div class="col">
+                    <h2 class="fw-800 mb-1" style="font-size:1.35rem;letter-spacing:-0.025em;">
+                        {{ profile.first_name or current_user.username }} {{ profile.last_name or '' }}
+                    </h2>
+                    <p class="text-muted mb-2" style="font-size:0.875rem;">
+                        {{ profile.preferred_domain or 'Domain not set' }}
+                    </p>
+                    <div class="d-flex flex-wrap align-items-center gap-3">
+                        <span class="d-flex align-items-center gap-1" style="font-size:0.8rem;color:var(--text-muted);">
+                            <i class="bi bi-envelope-fill"></i>
+                            {{ current_user.email }}
+                            <span class="badge bg-success ms-1">Verified</span>
+                        </span>
+                        {% if profile.phone_number %}
+                        <span class="d-flex align-items-center gap-1" style="font-size:0.8rem;color:var(--text-muted);">
+                            <i class="bi bi-telephone-fill"></i>
+                            {{ profile.phone_number }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                <!-- Quick Stats -->
+                <div class="col-auto d-none d-md-flex gap-2">
+                    <div class="profile-stat-pill">
+                        <span class="pill-value">{{ stats.total_interviews }}</span>
+                        <span class="pill-label">Sessions</span>
+                    </div>
+                    <div class="profile-stat-pill">
+                        <span class="pill-value">{{ stats.average_score }}%</span>
+                        <span class="pill-label">Avg Score</span>
+                    </div>
+                    <div class="profile-stat-pill">
+                        <span class="pill-value">{{ stats.highest_score }}%</span>
+                        <span class="pill-label">Best Score</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Social Links -->
+            {% if profile.github_profile or profile.linkedin_profile or profile.portfolio_website %}
+            <div class="d-flex flex-wrap gap-2 mt-4 pt-3" style="border-top:1px solid var(--border-base);">
+                {% if profile.github_profile %}
+                <a href="{{ profile.github_profile }}" target="_blank" class="btn btn-sm btn-glass">
+                    <i class="bi bi-github me-1"></i>GitHub
+                </a>
+                {% endif %}
+                {% if profile.linkedin_profile %}
+                <a href="{{ profile.linkedin_profile }}" target="_blank" class="btn btn-sm btn-glass">
+                    <i class="bi bi-linkedin me-1"></i>LinkedIn
+                </a>
+                {% endif %}
+                {% if profile.portfolio_website %}
+                <a href="{{ profile.portfolio_website }}" target="_blank" class="btn btn-sm btn-glass">
+                    <i class="bi bi-globe2 me-1"></i>Portfolio
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Academic Information -->
+        <div class="profile-section">
+            <h5 class="profile-section-title">Academic Information</h5>
+            <dl class="profile-data-grid">
+                <div>
+                    <dt>College</dt>
+                    <dd>{{ profile.college_name or '—' }}</dd>
+                </div>
+                <div>
+                    <dt>University</dt>
+                    <dd>{{ profile.university or '—' }}</dd>
+                </div>
+                <div>
+                    <dt>Degree</dt>
+                    <dd>{{ profile.degree or '—' }}</dd>
+                </div>
+                <div>
+                    <dt>Branch</dt>
+                    <dd>{{ profile.branch or '—' }}</dd>
+                </div>
+                <div>
+                    <dt>Graduation Year</dt>
+                    <dd>{{ profile.graduation_year or '—' }}</dd>
+                </div>
+                <div>
+                    <dt>CGPA</dt>
+                    <dd>{{ profile.cgpa or '—' }}</dd>
+                </div>
+            </dl>
+        </div>
+
+        <!-- Professional Information -->
+        <div class="profile-section">
+            <h5 class="profile-section-title">Professional Information</h5>
+            <dl class="profile-data-grid">
+                <div>
+                    <dt>Skills</dt>
+                    <dd>
+                        {% if profile.skills %}
+                            <div class="d-flex flex-wrap gap-1 mt-1">
+                                {% for skill in profile.skills.split(',') %}
+                                <span class="skill-tag">{{ skill.strip() }}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}—{% endif %}
+                    </dd>
+                </div>
+                <div>
+                    <dt>Languages</dt>
+                    <dd>
+                        {% if profile.programming_languages %}
+                            <div class="d-flex flex-wrap gap-1 mt-1">
+                                {% for lang in profile.programming_languages.split(',') %}
+                                <span class="skill-tag">{{ lang.strip() }}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}—{% endif %}
+                    </dd>
+                </div>
+                <div>
+                    <dt>GitHub</dt>
+                    <dd>
+                        {% if profile.github_profile %}
+                            <a href="{{ profile.github_profile }}" target="_blank">{{ profile.github_profile }}</a>
+                        {% else %}—{% endif %}
+                    </dd>
+                </div>
+                <div>
+                    <dt>LinkedIn</dt>
+                    <dd>
+                        {% if profile.linkedin_profile %}
+                            <a href="{{ profile.linkedin_profile }}" target="_blank">{{ profile.linkedin_profile }}</a>
+                        {% else %}—{% endif %}
+                    </dd>
+                </div>
+                <div>
+                    <dt>Portfolio</dt>
+                    <dd>
+                        {% if profile.portfolio_website %}
+                            <a href="{{ profile.portfolio_website }}" target="_blank">{{ profile.portfolio_website }}</a>
+                        {% else %}—{% endif %}
+                    </dd>
+                </div>
+                <div>
+                    <dt>Resume</dt>
+                    <dd>
+                        {% if profile.resume_filename %}
+                            <a href="{{ url_for('static', filename='uploads/resumes/' + profile.resume_filename) }}" target="_blank" class="d-inline-flex align-items-center gap-1">
+                                <i class="bi bi-file-earmark-pdf-fill text-danger"></i>
+                                {{ profile.resume_filename }}
+                            </a>
+                        {% else %}—{% endif %}
+                    </dd>
+                </div>
+            </dl>
+        </div>
+
+        <!-- Interview Statistics -->
+        <div class="profile-section">
+            <h5 class="profile-section-title">Interview Statistics</h5>
+            <dl class="profile-data-grid">
+                <div>
+                    <dt>Total Interviews</dt>
+                    <dd>{{ stats.total_interviews }}</dd>
+                </div>
+                <div>
+                    <dt>Highest Score</dt>
+                    <dd>{{ stats.highest_score }}%</dd>
+                </div>
+                <div>
+                    <dt>Average Score</dt>
+                    <dd>{{ stats.average_score }}%</dd>
+                </div>
+                <div>
+                    <dt>Last Interview</dt>
+                    <dd>{{ stats.last_interview_date }}</dd>
+                </div>
+                <div>
+                    <dt>Account Created</dt>
+                    <dd>{{ account_created_date }}</dd>
+                </div>
+            </dl>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

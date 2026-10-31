@@ -1,0 +1,672 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — Interview.ai{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<main class="product-dashboard" aria-labelledby="dashboardTitle">
+  <section class="dashboard-command-hero" data-reveal>
+    <div class="hero-particle-field" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <div class="dashboard-hero-copy">
+      <span class="product-kicker"><i class="bi bi-stars"></i> Your AI career workspace</span>
+      <h1 id="dashboardTitle">Good to see you, <span>{{ (current_user.profile.first_name if current_user.profile else None) or current_user.username }}</span>.</h1>
+      <p>Your preparation signals are synchronized. Build interview confidence with a focused next step chosen from your latest performance.</p>
+      <div class="dashboard-hero-actions">
+        <a href="{{ url_for('interview_assessment') }}" class="product-primary-action"><i class="bi bi-play-fill"></i><span>Start AI practice<small>Adaptive assessment</small></span><i class="bi bi-arrow-up-right"></i></a>
+        <a href="{{ url_for('resume_analyzer') }}" class="product-secondary-action"><i class="bi bi-file-earmark-person"></i>Analyze resume</a>
+      </div>
+      <div class="hero-trust-row">
+        <span><i class="bi bi-shield-check"></i> Private by design</span>
+        <span><i class="bi bi-lightning-charge"></i> Instant feedback</span>
+        <span><i class="bi bi-stars"></i> Gemini powered</span>
+      </div>
+    </div>
+
+    <aside class="dashboard-ai-brief" aria-label="Today's AI briefing">
+      <div class="ai-brief-heading">
+        <div class="ai-avatar-orbit" aria-hidden="true"><span><i class="bi bi-cpu-fill"></i></span></div>
+        <div><small>AI BRIEFING</small><strong>Today’s focus</strong></div>
+        <span class="live-signal"><i></i> LIVE</span>
+      </div>
+      <p>{% if not dash.has_resume %}Start with a resume analysis so your practice questions can reflect your real experience and target role.{% elif dash.average_score is not none and dash.average_score < 75 %}Your best next move is a focused assessment in a lower-scoring domain, followed by a review of missed concepts.{% else %}You are building strong momentum. Add a coding round today to reinforce speed and implementation quality.{% endif %}</p>
+      <div class="ai-brief-meter">
+        <div><span>Readiness signal</span><b>{{ (dash.average_score|round|int) if dash.average_score is not none else '—' }}{% if dash.average_score is not none %}%{% endif %}</b></div>
+        <div class="signal-track"><span style="--progress:{{ (dash.average_score|round|int) if dash.average_score is not none else 0 }}%"></span></div>
+      </div>
+      <a href="{{ url_for('reports') }}">Open full intelligence report <i class="bi bi-arrow-right"></i></a>
+    </aside>
+  </section>
+
+  <!-- GUIDED INTERVIEW JOURNEY HUB (SINGLE PROGRESSIVE JOURNEY) -->
+  <section class="dashboard-section domain-command-section" aria-labelledby="journeyHubTitle" data-reveal>
+    <div class="product-section-heading align-items-center">
+      <div>
+        <span>CAREER ROADMAP &middot; PROGRESSIVE INTERVIEW JOURNEY</span>
+        <h2 id="journeyHubTitle">Guided Interview Journey</h2>
+      </div>
+      <div id="domainActiveStatusBadge">
+        {% if dash.selected_domain %}
+        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill font-monospace d-inline-flex align-items-center gap-1.5" style="font-size: 0.8rem;">
+          <i class="bi bi-check-circle-fill"></i> Active Track: <strong>{{ dash.selected_domain }}</strong>
+        </span>
+        {% else %}
+        <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-2 rounded-pill font-monospace d-inline-flex align-items-center gap-1.5" style="font-size: 0.8rem;">
+          <i class="bi bi-exclamation-triangle-fill"></i> No Domain Selected
+        </span>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Active Journey Stepper Card -->
+    <div class="journey-hub-container">
+      <div class="journey-hub-header">
+        <div>
+          <span class="journey-hub-kicker"><i class="bi bi-compass-fill"></i> {{ dash.journey.domain or 'Target Domain Required' }}</span>
+          <h3 class="journey-hub-title">
+            {% if not dash.journey.has_domain %}
+              Choose Your Target Domain Below
+            {% elif dash.journey.certificate.unlocked %}
+              Interview Journey Completed! 🏆
+            {% else %}
+              Stage {{ '1' if not dash.journey.resume.completed else ('2' if not dash.journey.aptitude.completed else '3') }} of 4: {{ 'Resume Analysis' if not dash.journey.resume.completed else ('Aptitude Round' if not dash.journey.aptitude.completed else 'Coding Round') }}
+            {% endif %}
+          </h3>
+          <p class="journey-hub-subtitle">
+            Complete each milestone sequentially with an 80%+ passing score to unlock the next round and earn your verified credential.
+          </p>
+        </div>
+
+        <div class="journey-hub-cta-wrap" id="journeyHubCtaWrap">
+          {% if not dash.journey.has_domain %}
+            <button type="button" class="btn-journey-cta btn-journey-disabled" id="btnSelectTrack" onclick="document.getElementById('domainChipsGrid')?.scrollIntoView({behavior:'smooth'})">
+              <i class="bi bi-arrow-down-circle"></i> Select Track to Start
+            </button>
+          {% elif dash.journey.certificate.unlocked %}
+            <a href="{{ url_for('view_certificate') }}" class="btn-journey-cta btn-journey-success" id="btnStartJourney">
+              <i class="bi bi-award-fill"></i> View Certificate 🏆
+            </a>
+          {% elif not dash.journey.journey_started %}
+            <a href="{{ dash.journey.active_stage_url }}" class="btn-journey-cta btn-journey-primary" id="btnStartJourney">
+              <i class="bi bi-play-circle-fill"></i> Start Journey →
+            </a>
+          {% else %}
+            <a href="{{ dash.journey.active_stage_url }}" class="btn-journey-cta btn-journey-primary" id="btnStartJourney">
+              <i class="bi bi-arrow-right-circle-fill"></i> Continue with {{ dash.journey.domain }} →
+            </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- 4 Stages Grid -->
+      <div class="journey-stages-grid">
+        <!-- Stage 1: Resume Analysis -->
+        <div class="journey-stage-card {% if dash.journey.resume.completed %}stage-completed{% elif dash.journey.active_stage == 'resume' %}stage-active{% endif %}">
+          <div class="stage-top-meta">
+            <span class="stage-index-badge">STAGE 01</span>
+            <span class="stage-icon"><i class="bi bi-file-earmark-person-fill"></i></span>
+          </div>
+          <h4 class="stage-name">Resume Analysis</h4>
+          <p class="stage-desc">
+            {% if dash.journey.resume.ats_score is not none %}
+              ATS Score: <strong>{{ dash.journey.resume.ats_score|round|int }}/100</strong> (Min 80 required)
+            {% else %}
+              Upload resume &amp; job description to achieve 80+ ATS score.
+            {% endif %}
+          </p>
+          <div>
+            {% if dash.journey.resume.completed %}
+              <span class="stage-badge badge-completed"><i class="bi bi-check-circle-fill"></i> Completed ✓</span>
+            {% elif dash.journey.resume.status == 'in_progress' %}
+              <span class="stage-badge badge-warning"><i class="bi bi-exclamation-triangle-fill"></i> Retake Needed ({{ dash.journey.resume.ats_score|round|int }}%)</span>
+            {% else %}
+              <span class="stage-badge badge-available"><i class="bi bi-arrow-right-circle"></i> Available →</span>
+            {% endif %}
+          </div>
+          <a href="{{ url_for('resume_analyzer') }}" class="btn-stage-action">
+            <span>{% if dash.journey.resume.completed %}Review Resume{% elif dash.journey.resume.status == 'in_progress' %}Improve Resume{% else %}Start Analysis{% endif %}</span>
+            <i class="bi bi-chevron-right"></i>
+          </a>
+        </div>
+
+        <!-- Stage 2: Aptitude Assessment -->
+        <div class="journey-stage-card {% if dash.journey.aptitude.completed %}stage-completed{% elif dash.journey.active_stage == 'aptitude' %}stage-active{% elif not dash.journey.aptitude.unlocked %}stage-locked{% endif %}">
+          <div class="stage-top-meta">
+            <span class="stage-index-badge">STAGE 02</span>
+            <span class="stage-icon"><i class="bi bi-award-fill"></i></span>
+          </div>
+          <h4 class="stage-name">Aptitude Round</h4>
+          <p class="stage-desc">
+            {% if dash.journey.aptitude.score is not none %}
+              Score: <strong>{{ dash.journey.aptitude.score }}/100</strong> (Min 80 required)
+            {% elif dash.journey.aptitude.unlocked %}
+              20 domain-specific MCQs. Minimum 80% required to unlock Coding.
+            {% else %}
+              Requires ATS Score &ge; 80 to unlock.
+            {% endif %}
+          </p>
+          <div>
+            {% if dash.journey.aptitude.completed %}
+              <span class="stage-badge badge-completed"><i class="bi bi-check-circle-fill"></i> Completed ✓</span>
+            {% elif dash.journey.aptitude.unlocked %}
+              {% if dash.journey.aptitude.status == 'in_progress' %}
+                <span class="stage-badge badge-warning"><i class="bi bi-exclamation-triangle-fill"></i> Retake Needed ({{ dash.journey.aptitude.score }}%)</span>
+              {% else %}
+                <span class="stage-badge badge-available"><i class="bi bi-arrow-right-circle"></i> Ready to Start →</span>
+              {% endif %}
+            {% else %}
+              <span class="stage-badge badge-locked"><i class="bi bi-lock-fill"></i> Locked 🔒</span>
+            {% endif %}
+          </div>
+          {% if dash.journey.aptitude.unlocked %}
+            <a href="{{ url_for('interview_assessment') }}" class="btn-stage-action">
+              <span>{% if dash.journey.aptitude.completed %}Review Round{% elif dash.journey.aptitude.status == 'in_progress' %}Retake Round{% else %}Start Assessment{% endif %}</span>
+              <i class="bi bi-chevron-right"></i>
+            </a>
+          {% else %}
+            <span class="btn-stage-action disabled">
+              <span>Locked</span> <i class="bi bi-lock-fill"></i>
+            </span>
+          {% endif %}
+        </div>
+
+        <!-- Stage 3: Coding Assessment -->
+        <div class="journey-stage-card {% if dash.journey.coding.completed %}stage-completed{% elif dash.journey.active_stage == 'coding' %}stage-active{% elif not dash.journey.coding.unlocked %}stage-locked{% endif %}">
+          <div class="stage-top-meta">
+            <span class="stage-index-badge">STAGE 03</span>
+            <span class="stage-icon position-relative">
+              <i class="bi bi-code-slash"></i>
+              {% if not dash.journey.coding.unlocked %}
+              <i class="bi bi-lock-fill text-warning position-absolute" style="font-size: 0.65rem; bottom: 3px; right: 3px;" aria-hidden="true"></i>
+              {% endif %}
+            </span>
+          </div>
+          <h4 class="stage-name">Coding Assessment</h4>
+          <p class="stage-desc">
+            {% if dash.journey.coding.score is not none %}
+              Overall Score: <strong>{{ dash.journey.coding.score|round|int }}%</strong>
+            {% elif dash.journey.coding.unlocked %}
+              Algorithmic challenges in Docker isolated sandbox.
+            {% else %}
+              <i class="bi bi-lock-fill text-warning me-1"></i>Complete Aptitude to unlock
+            {% endif %}
+          </p>
+          <div>
+            {% if dash.journey.coding.completed %}
+              <span class="stage-badge badge-completed"><i class="bi bi-check-circle-fill"></i> Completed ✓</span>
+            {% elif dash.journey.coding.unlocked %}
+              <span class="stage-badge badge-available"><i class="bi bi-arrow-right-circle"></i> Ready to Start →</span>
+            {% else %}
+              <span class="stage-badge badge-locked"><i class="bi bi-lock-fill"></i> Locked 🔒</span>
+            {% endif %}
+          </div>
+          {% if dash.journey.coding.unlocked %}
+            <a href="{{ url_for('coding_setup') }}" class="btn-stage-action">
+              <span>{% if dash.journey.coding.completed %}Review Code{% else %}Start Coding{% endif %}</span>
+              <i class="bi bi-chevron-right"></i>
+            </a>
+          {% else %}
+            <span class="btn-stage-action disabled">
+              <span>Locked</span> <i class="bi bi-lock-fill"></i>
+            </span>
+          {% endif %}
+        </div>
+
+        <!-- Stage 4: Certificate -->
+        <div class="journey-stage-card {% if dash.journey.certificate.unlocked %}stage-completed{% else %}stage-locked{% endif %}">
+          <div class="stage-top-meta">
+            <span class="stage-index-badge">STAGE 04</span>
+            <span class="stage-icon"><i class="bi bi-patch-check-fill"></i></span>
+          </div>
+          <h4 class="stage-name">Certificate</h4>
+          <p class="stage-desc">
+            {% if dash.journey.certificate.unlocked %}
+              Credential ID: <strong>{{ dash.journey.certificate.id }}</strong>
+            {% else %}
+              Pass all 3 stages with 80%+ to unlock official certificate.
+            {% endif %}
+          </p>
+          <div>
+            {% if dash.journey.certificate.unlocked %}
+              <span class="stage-badge badge-completed" style="background:#fef3c7;color:#b45309;border-color:rgba(245,158,11,.35);"><i class="bi bi-trophy-fill"></i> Unlocked 🏆</span>
+            {% else %}
+              <span class="stage-badge badge-locked"><i class="bi bi-lock-fill"></i> Locked 🔒</span>
+            {% endif %}
+          </div>
+          {% if dash.journey.certificate.unlocked %}
+            <a href="{{ url_for('view_certificate') }}" class="btn-stage-action" style="color:#b45309;font-weight:800;">
+              <span>View Certificate</span> <i class="bi bi-award-fill"></i>
+            </a>
+          {% else %}
+            <span class="btn-stage-action disabled">
+              <span>Locked</span> <i class="bi bi-lock-fill"></i>
+            </span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Target Domain Selector (Single Source of Truth) -->
+    <div class="target-domain-card">
+      <div class="domain-card-header-row mb-3 d-flex align-items-center justify-content-between">
+        <div>
+          <h4 class="h6 fw-bold mb-1 text-main">Select Target Engineering Track</h4>
+          <p class="text-muted small mb-0">
+            Changing tracks will tailor the complete progressive journey to that domain.
+          </p>
+        </div>
+      </div>
+
+      <div class="domain-chips-grid" id="domainChipsGrid">
+        {% for dom in dash.supported_domains %}
+        {% set meta = dash.domain_metadata[dom] %}
+        {% set is_active = (dash.selected_domain == dom) %}
+        <button type="button" 
+                class="domain-chip-btn {% if is_active %}active{% endif %}" 
+                data-domain="{{ dom }}"
+                aria-pressed="{{ 'true' if is_active else 'false' }}">
+          <div class="domain-chip-left">
+            <span class="domain-chip-icon"><i class="bi {{ meta.icon }}"></i></span>
+            <div class="domain-chip-text">
+              <strong class="domain-chip-name">{{ dom }}</strong>
+              <small class="domain-chip-desc">{{ meta.description }}</small>
+            </div>
+          </div>
+          <div class="domain-chip-right">
+            <span class="domain-category-badge">{{ meta.badge }}</span>
+            <span class="domain-active-check"><i class="bi bi-check-circle-fill"></i></span>
+          </div>
+        </button>
+        {% endfor %}
+      </div>
+
+      <div class="domain-feedback-toast d-none" id="domainFeedbackToast" role="alert">
+        <i class="bi bi-check-circle-fill text-success"></i>
+        <span id="domainFeedbackText">Target domain synchronized.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Domain Switch Confirmation Modal -->
+  <div id="domainSwitchModal" class="journey-switch-modal-backdrop d-none" role="dialog" aria-modal="true" aria-labelledby="switchModalTitle">
+    <div class="journey-switch-modal-card">
+      <div class="mb-3">
+        <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 2.75rem;"></i>
+      </div>
+      <h3 class="fw-bold mb-2 text-main" id="switchModalTitle" style="font-size: 1.35rem;">Switch Interview Track?</h3>
+      <p class="text-muted small mb-4" style="font-size: 0.9rem; line-height: 1.5;">
+        Changing your domain will start a new interview journey for <strong id="modalNewDomainName" class="text-primary"></strong>.
+        Your previous completed journey will remain safely preserved in your history.
+      </p>
+      <div class="d-flex gap-2">
+        <button type="button" id="btnCancelDomainSwitch" class="btn btn-outline-secondary w-50 py-2.5 rounded-pill fw-semibold">
+          Keep Current Track
+        </button>
+        <button type="button" id="btnConfirmDomainSwitch" class="btn btn-primary w-50 py-2.5 rounded-pill fw-semibold">
+          Switch &amp; Start
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <section class="dashboard-section" aria-labelledby="signalTitle">
+    <div class="product-section-heading">
+      <div><span>LIVE SIGNALS</span><h2 id="signalTitle">Your preparation pulse</h2></div>
+      <a href="{{ url_for('reports') }}">Explore analytics <i class="bi bi-arrow-up-right"></i></a>
+    </div>
+    <div class="signal-card-grid">
+      <article class="signal-card tone-indigo" data-tilt>
+        <div class="signal-card-top"><span class="signal-icon"><i class="bi bi-activity"></i></span><span class="signal-trend"><i class="bi bi-graph-up"></i> {{ 'Live Signal' if dash.sessions_completed > 0 else 'No data yet' }}</span></div>
+        <div class="signal-card-value" {% if dash.average_score is not none %}data-counter="{{ dash.average_score|round|int }}"{% endif %}>{{ (dash.average_score|round|int) if dash.average_score is not none else '—' }}{% if dash.average_score is not none %}<small>%</small>{% endif %}</div>
+        <h3>Average score</h3><p>Across completed assessments</p>
+        <svg class="signal-spark" viewBox="0 0 180 36" preserveAspectRatio="none" aria-hidden="true"><path d="M0 29 C20 23 28 31 48 20 S76 23 94 14 S124 17 142 8 S165 12 180 3"/></svg>
+      </article>
+      <article class="signal-card tone-violet" data-tilt>
+        <div class="signal-card-top"><span class="signal-icon"><i class="bi bi-check2-circle"></i></span><span class="signal-status">{{ 'Verified' if dash.sessions_completed > 0 else 'None yet' }}</span></div>
+        <div class="signal-card-value" data-counter="{{ dash.sessions_completed }}">{{ dash.sessions_completed }}</div>
+        <h3>Sessions completed</h3><p>Your verified practice history</p>
+        <div class="micro-bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      </article>
+      <article class="signal-card tone-cyan" data-tilt>
+        <div class="signal-card-top"><span class="signal-icon"><i class="bi bi-lightning-charge"></i></span><span class="signal-trend"><i class="bi bi-stars"></i> {{ 'Personal best' if dash.peak_score is not none else 'No score yet' }}</span></div>
+        <div class="signal-card-value" {% if dash.peak_score is not none %}data-counter="{{ dash.peak_score|round|int }}"{% endif %}>{{ (dash.peak_score|round|int) if dash.peak_score is not none else '—' }}{% if dash.peak_score is not none %}<small>%</small>{% endif %}</div>
+        <h3>Peak performance</h3><p>{{ 'Your strongest recorded session' if dash.peak_score is not none else 'No assessment score yet' }}</p>
+        <div class="signal-ring" style="--ring:{{ dash.peak_score or 0 }}"><span></span></div>
+      </article>
+      <article class="signal-card tone-amber" data-tilt>
+        <div class="signal-card-top"><span class="signal-icon"><i class="bi bi-file-earmark-check"></i></span><span class="signal-status">{{ 'Ready' if dash.resume_status in ['Completed', 'Analyzed'] else 'Pending' }}</span></div>
+        <div class="signal-card-value signal-card-copy">{{ dash.ats_score|round|int ~ '%' if dash.ats_score is not none else 'Pending' }}</div>
+        <h3>Resume intelligence</h3><p>{{ 'ATS score verified at ' ~ dash.ats_score|round|int ~ '%' if dash.ats_score is not none else 'Upload your resume to begin' }}</p>
+        <a href="{{ url_for('resume_analyzer') }}" class="signal-inline-link">{{ 'Review analysis' if dash.has_resume else 'Analyze now' }} <i class="bi bi-arrow-right"></i></a>
+      </article>
+    </div>
+  </section>
+
+  <section class="dashboard-intelligence-grid">
+    <article class="product-panel performance-panel" data-reveal>
+      <header class="product-panel-header"><div><span>PERFORMANCE</span><h2>Domain intelligence</h2><p>{{ ('Track average: ' ~ dash.domain_score|round|int ~ '% for ' ~ dash.selected_domain) if dash.domain_score is not none else ('Average scores across your technical practice areas.' if dash.chart_labels else 'No assessment data yet') }}</p></div><a href="{{ url_for('reports') }}" class="icon-link" aria-label="View analytics"><i class="bi bi-arrow-up-right"></i></a></header>
+      {% if dash.chart_labels and dash.chart_labels|length > 0 %}
+        <div class="chart-container product-chart"><canvas id="performanceBarChart"></canvas></div>
+      {% else %}
+        <div class="chart-empty-state text-center p-4 my-3 rounded-3" style="background: rgba(248, 250, 252, 0.6); border: 1px dashed #cbd5e1;">
+          <i class="bi bi-bar-chart-line text-muted mb-2 d-block" style="font-size: 2.2rem;"></i>
+          <h4 class="h6 fw-semibold text-main mb-1">No Assessment Data Yet</h4>
+          <p class="text-muted small mb-0">Complete your first aptitude or coding assessment to view your real domain performance metrics.</p>
+        </div>
+      {% endif %}
+    </article>
+
+    <article class="product-panel momentum-panel" data-reveal>
+      <header class="product-panel-header"><div><span>MOMENTUM</span><h2>Today’s progress</h2><p>Small steps, compounded daily.</p></div><span class="streak-chip"><i class="bi bi-fire"></i> Active</span></header>
+      <div class="momentum-score">
+        <div class="momentum-ring" style="--progress:{{ ((dash.today_completed / dash.today_goal * 100)|round)|int if dash.today_completed < dash.today_goal else 100 }}"><div><strong>{{ dash.today_completed }}</strong><small>of {{ dash.today_goal }}</small></div></div>
+        <div><strong>Daily practice goal</strong><p>{{ dash.today_goal - dash.today_completed if dash.today_completed < dash.today_goal else 0 }} focused session{{ 's' if (dash.today_goal - dash.today_completed) != 1 else '' }} remaining today.</p></div>
+      </div>
+      <div class="momentum-checklist">
+        <a href="{{ url_for('interview_assessment') }}"><span><i class="bi bi-chat-square-text"></i></span><div><b>Practice assessment</b><small>Build domain confidence</small></div><i class="bi bi-chevron-right"></i></a>
+        <a href="{{ url_for('coding_setup') }}"><span><i class="bi bi-code-slash"></i></span><div><b>Coding round</b><small>Train speed and accuracy</small></div><i class="bi bi-chevron-right"></i></a>
+        <a href="{{ url_for('resume_analyzer') }}"><span><i class="bi bi-file-text"></i></span><div><b>Resume optimization</b><small>Improve job alignment</small></div><i class="bi bi-chevron-right"></i></a>
+      </div>
+    </article>
+  </section>
+
+  <section class="dashboard-intelligence-grid lower-grid">
+    <article class="product-panel activity-stream" data-reveal>
+      <header class="product-panel-header"><div><span>ACTIVITY STREAM</span><h2>Recent preparation</h2></div><a href="{{ url_for('history') }}">View all</a></header>
+      <div class="product-timeline">
+        {% if dash.recent_sessions %}
+          {% for session in dash.recent_sessions[:5] %}
+          <a href="{{ session.url }}" class="product-timeline-item">
+            <span class="timeline-node"><i class="bi bi-check2"></i></span><div><b>{{ session.domain }}</b><small>{{ session.subtitle }}</small></div><strong class="timeline-result {{ 'good' if session.score >= 80 else 'mid' if session.score >= 60 else 'low' }}">{{ session.score }}%</strong>
+          </a>
+          {% endfor %}
+        {% else %}
+          <div class="product-empty-state"><span><i class="bi bi-stars"></i></span><h3>Your story starts here</h3><p>Complete an assessment and your progress timeline will appear automatically.</p><a href="{{ url_for('interview_assessment') }}">Start first assessment</a></div>
+        {% endif %}
+      </div>
+    </article>
+
+    <article class="product-panel opportunity-panel" data-reveal>
+      <header class="product-panel-header"><div><span>AI OPPORTUNITIES</span><h2>Recommended next</h2></div><div class="tiny-ai-orb"><i class="bi bi-stars"></i></div></header>
+      <div class="opportunity-stack">
+        {% if not dash.has_resume %}<a href="{{ url_for('resume_analyzer') }}"><span class="opportunity-index">01</span><div><b>Build your interview profile</b><small>Analyze your resume for ATS fit and skill gaps.</small></div><i class="bi bi-arrow-up-right"></i></a>{% endif %}
+        <a href="{{ url_for('interview_assessment') }}"><span class="opportunity-index">{{ '02' if not dash.has_resume else '01' }}</span><div><b>Practice with intent</b><small>Run a focused technical assessment.</small></div><i class="bi bi-arrow-up-right"></i></a>
+        <a href="{{ url_for('reports') }}"><span class="opportunity-index">{{ '03' if not dash.has_resume else '02' }}</span><div><b>Review your signal map</b><small>Find patterns across skills and sessions.</small></div><i class="bi bi-arrow-up-right"></i></a>
+      </div>
+    </article>
+  </section>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  // 1. ISOLATED DASHBOARD CHART INITIALIZATION (Never blocks domain selection)
+  (function initPerformanceChart() {
+    try {
+      const canvas = document.getElementById('performanceBarChart');
+      if (!canvas || typeof Chart === 'undefined') return;
+      const labels = {{ dash.chart_labels|tojson }};
+      const values = {{ dash.chart_data|tojson }};
+      if (!labels || !labels.length) return;
+      const context = canvas.getContext('2d');
+      const fill = context.createLinearGradient(0, 0, 0, 320);
+      fill.addColorStop(0, 'rgba(79,70,229,.92)');
+      fill.addColorStop(1, 'rgba(6,182,212,.35)');
+      const chart = new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: values,
+            backgroundColor: fill,
+            borderColor: 'rgba(99,102,241,.9)',
+            borderWidth: 1,
+            borderRadius: 12,
+            borderSkipped: false,
+            maxBarThickness: 34
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 1300, easing: 'easeOutQuart' },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: 'rgba(15,23,42,.94)',
+              padding: 12,
+              cornerRadius: 12,
+              displayColors: false,
+              callbacks: { label: (item) => ` Readiness: ${item.raw}%` }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              border: { display: false },
+              grid: { color: 'rgba(148,163,184,.12)' },
+              ticks: { callback: (value) => value + '%', color: '#94a3b8', font: { size: 11 } }
+            },
+            x: {
+              border: { display: false },
+              grid: { display: false },
+              ticks: { color: '#64748b', font: { size: 11, weight: '600' } }
+            }
+          }
+        }
+      });
+      window.addEventListener('interviewai:themechange', () => chart.update('none'));
+    } catch (err) {
+      console.warn('Dashboard performance chart initialization skipped:', err);
+    }
+  })();
+
+  // 2. TARGET DOMAIN SELECTION HANDLER
+  const domainButtons = document.querySelectorAll('.domain-chip-btn');
+  const activeBadge = document.getElementById('domainActiveStatusBadge');
+  const feedbackToast = document.getElementById('domainFeedbackToast');
+  const feedbackText = document.getElementById('domainFeedbackText');
+  const ctaWrap = document.getElementById('journeyHubCtaWrap');
+
+  const switchModal = document.getElementById('domainSwitchModal');
+  const modalNewDomainName = document.getElementById('modalNewDomainName');
+  const btnCancelDomainSwitch = document.getElementById('btnCancelDomainSwitch');
+  const btnConfirmDomainSwitch = document.getElementById('btnConfirmDomainSwitch');
+
+  let pendingTargetDomain = null;
+  let previousActiveBtn = document.querySelector('.domain-chip-btn.active');
+
+  function openSwitchModal(newDomain) {
+    pendingTargetDomain = newDomain;
+    if (modalNewDomainName) modalNewDomainName.textContent = newDomain;
+    if (switchModal) switchModal.classList.remove('d-none');
+  }
+
+  function closeSwitchModal() {
+    pendingTargetDomain = null;
+    if (switchModal) switchModal.classList.add('d-none');
+    // Restore previous active button visually
+    if (previousActiveBtn) {
+      domainButtons.forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-pressed', 'false');
+      });
+      previousActiveBtn.classList.add('active');
+      previousActiveBtn.setAttribute('aria-pressed', 'true');
+    }
+  }
+
+  if (btnCancelDomainSwitch) {
+    btnCancelDomainSwitch.addEventListener('click', closeSwitchModal);
+  }
+
+  if (btnConfirmDomainSwitch) {
+    btnConfirmDomainSwitch.addEventListener('click', async function () {
+      if (!pendingTargetDomain) return;
+      const targetDomain = pendingTargetDomain;
+      closeSwitchModal();
+      await executeDomainChange(targetDomain, true);
+    });
+  }
+
+  function updateTopButton(domain, journey) {
+    if (!ctaWrap) return;
+    const stageUrl = (journey && journey.active_stage_url) ? journey.active_stage_url : '{{ url_for("resume_analyzer") }}';
+    if (journey && journey.certificate && journey.certificate.unlocked) {
+      ctaWrap.innerHTML = `
+        <a href="{{ url_for('view_certificate') }}" class="btn-journey-cta btn-journey-success" id="btnStartJourney">
+          <i class="bi bi-award-fill"></i> View Certificate 🏆
+        </a>
+      `;
+    } else if (!journey || !journey.journey_started) {
+      ctaWrap.innerHTML = `
+        <a href="${stageUrl}" class="btn-journey-cta btn-journey-primary" id="btnStartJourney">
+          <i class="bi bi-play-circle-fill"></i> Start Journey →
+        </a>
+      `;
+    } else {
+      ctaWrap.innerHTML = `
+        <a href="${stageUrl}" class="btn-journey-cta btn-journey-primary" id="btnStartJourney">
+          <i class="bi bi-arrow-right-circle-fill"></i> Continue with ${domain} →
+        </a>
+      `;
+    }
+  }
+
+  function showFeedback(message, isError = false) {
+    if (!feedbackToast || !feedbackText) return;
+    feedbackText.textContent = message;
+    if (isError) {
+      feedbackToast.classList.add('toast-error');
+      const icon = feedbackToast.querySelector('i');
+      if (icon) icon.className = 'bi bi-exclamation-circle-fill text-danger';
+    } else {
+      feedbackToast.classList.remove('toast-error');
+      const icon = feedbackToast.querySelector('i');
+      if (icon) icon.className = 'bi bi-check-circle-fill text-success';
+    }
+    feedbackToast.classList.remove('d-none');
+    setTimeout(() => {
+      feedbackToast.classList.add('d-none');
+    }, 4000);
+  }
+
+  async function executeDomainChange(targetDomain, confirmSwitch = false) {
+    try {
+      const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '{{ csrf_token }}';
+      const response = await fetch('{{ url_for("set_target_domain") }}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({ domain: targetDomain, confirm_switch: confirmSwitch })
+      });
+
+      const result = await response.json();
+
+      if (result.requires_confirmation) {
+        openSwitchModal(targetDomain);
+        return;
+      }
+
+      if (result.success) {
+        if (confirmSwitch) {
+          window.location.reload();
+          return;
+        }
+
+        // 1. Lock in visual selected state on cards
+        domainButtons.forEach(b => {
+          const isSelected = (b.getAttribute('data-domain') === result.domain);
+          if (isSelected) {
+            b.classList.add('active');
+            b.setAttribute('aria-pressed', 'true');
+            previousActiveBtn = b;
+          } else {
+            b.classList.remove('active');
+            b.setAttribute('aria-pressed', 'false');
+          }
+        });
+
+        // 2. Update Active Track badge
+        if (activeBadge) {
+          activeBadge.innerHTML = `
+            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill font-monospace d-inline-flex align-items-center gap-1.5" style="font-size: 0.8rem;">
+              <i class="bi bi-check-circle-fill"></i> Active Track: <strong>${result.domain}</strong>
+            </span>
+          `;
+        }
+
+        // 3. Update Stepper Header Kicker and Title
+        const kicker = document.querySelector('.journey-hub-kicker');
+        if (kicker) {
+          kicker.innerHTML = `<i class="bi bi-compass-fill"></i> ${result.domain}`;
+        }
+        const title = document.querySelector('.journey-hub-title');
+        if (title && (title.textContent.includes('Choose Your Target Domain') || title.textContent.includes('Target Domain Required'))) {
+          title.textContent = 'Stage 1 of 4: Resume Analysis';
+        }
+
+        // 4. Update Top Button
+        updateTopButton(result.domain, result.journey);
+
+        // 5. Show Success Feedback
+        showFeedback(`Target track set to ${result.domain}. Interview journey synchronized.`);
+      } else {
+        // Revert card selection visually on failure
+        if (previousActiveBtn) {
+          domainButtons.forEach(b => {
+            b.classList.remove('active');
+            b.setAttribute('aria-pressed', 'false');
+          });
+          previousActiveBtn.classList.add('active');
+          previousActiveBtn.setAttribute('aria-pressed', 'true');
+        } else {
+          domainButtons.forEach(b => {
+            b.classList.remove('active');
+            b.setAttribute('aria-pressed', 'false');
+          });
+        }
+        showFeedback(result.message || 'Unable to save your domain. Please try again.', true);
+      }
+    } catch (err) {
+      console.error('Domain update error:', err);
+      if (previousActiveBtn) {
+        domainButtons.forEach(b => {
+          b.classList.remove('active');
+          b.setAttribute('aria-pressed', 'false');
+        });
+        previousActiveBtn.classList.add('active');
+        previousActiveBtn.setAttribute('aria-pressed', 'true');
+      }
+      showFeedback('Unable to save your domain. Please try again.', true);
+    }
+  }
+
+  domainButtons.forEach(btn => {
+    btn.addEventListener('click', async function (e) {
+      e.preventDefault();
+      const targetDomain = this.getAttribute('data-domain') || this.dataset.domain;
+      if (!targetDomain) return;
+
+      // Optimistic visual selection
+      domainButtons.forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-pressed', 'false');
+      });
+      this.classList.add('active');
+      this.setAttribute('aria-pressed', 'true');
+
+      await executeDomainChange(targetDomain, false);
+    });
+  });
+});
+</script>
+{% endblock %}

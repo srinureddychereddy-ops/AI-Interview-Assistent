@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Interview Report{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="section-title">Interview Report</h1>
+            <p class="text-muted mb-0">Analysis of your performance for the {{ report.role }} assessment on {{ report.date }}.</p>
+        </div>
+        <a href="{{ url_for('interview_assessment') }}" class="btn btn-glass"><i class="bi bi-x-lg me-2"></i>Exit Report</a>
+    </div>
+
+    <!-- This is a mock report structure based on the data provided in app.py -->
+    <div class="row g-4">
+        <!-- Left Column: Overall Score & Details -->
+        <div class="col-lg-8">
+            <div class="card-glass p-4 p-lg-5">
+                <div class="row">
+                    <div class="col-md-5 text-center">
+                        <h5 class="card-heading">Overall Score</h5>
+                        <div class="score-circle mx-auto my-3">
+                            <span>{{ report.overall_score }}<small>%</small></span>
+                        </div>
+                        <span class="badge rounded-pill fs-6 px-3 py-2 {{ report.performance_badge.class }}">{{ report.performance_badge.text }}</span>
+                        <p class="text-muted mt-3 small">Duration: {{ report.duration }}</p>
+                    </div>
+                    <div class="col-md-7">
+                        <h5 class="card-heading">Detailed Scores</h5>
+                        <div class="d-flex flex-column gap-3 mt-3 report-detailed-scores">
+                            {% for skill, score in report.detailed_scores.items() %}
+                            <div>
+                                <div class="d-flex justify-content-between small mb-1">
+                                    <span class="text-muted">{{ skill }}</span>
+                                    <span class="text-main fw-semibold">{{ score }}%</span>
+                                </div>
+                                <div class="progress" style="height: 6px;">
+                                    <div class="progress-bar" role="progressbar" style="width: {{ score }}%"></div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <hr class="my-4 border-glass">
+                <div>
+                    <h5 class="card-heading">AI Summary</h5>
+                    <p class="text-muted">{{ report.summary }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Feedback -->
+        <div class="col-lg-4">
+            <div class="d-flex flex-column gap-4">
+                <div class="report-feedback-box card-glass">
+                    <h5 class="feedback-title strengths"><i class="bi bi-check-circle-fill me-2"></i>Strengths</h5>
+                    <p class="text-muted small">{{ report.strengths | safe }}</p>
+                </div>
+                <div class="report-feedback-box card-glass">
+                    <h5 class="feedback-title weaknesses"><i class="bi bi-exclamation-triangle-fill me-2"></i>Weaknesses</h5>
+                    <p class="text-muted small">{{ report.weaknesses | safe }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/interview.css') }}">
+{% endblock %}

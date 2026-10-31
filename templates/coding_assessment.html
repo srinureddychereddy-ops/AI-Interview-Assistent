@@ -1,0 +1,353 @@
+{% extends "base.html" %}
+
+{% block title %}Coding Assessment — Interview.ai{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/coding.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="assessment-fullscreen-wrapper">
+
+    <!-- 1. TOP BAR -->
+    <header class="assessment-top-bar">
+        <!-- Left: Brand -->
+        <div class="assessment-brand-area">
+            <div class="assessment-brand-icon">
+                <i class="bi bi-cpu-fill"></i>
+            </div>
+            <span class="assessment-brand-name">Interview.ai</span>
+            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-20 font-monospace small ms-1 d-none d-sm-inline" style="font-size: 0.68rem;">ASSESSMENT</span>
+        </div>
+
+        <!-- Center: Role & Difficulty -->
+        <div class="assessment-meta-center d-none d-md-flex">
+            <span class="assessment-role-pill">{{ role }}</span>
+            <span class="assessment-meta-sep">•</span>
+            <span class="badge {% if difficulty|lower == 'easy' %}bg-success-subtle text-success{% elif difficulty|lower == 'hard' %}bg-danger-subtle text-danger{% else %}bg-warning-subtle text-warning{% endif %} font-monospace">
+                {{ difficulty }}
+            </span>
+        </div>
+
+        <!-- Right: Timer & Exit -->
+        <div class="assessment-actions-right">
+            <div class="assessment-timer-badge" id="timerBadge" title="Remaining assessment time">
+                <i class="bi bi-stopwatch"></i>
+                <span id="timerDisplay">--:--</span>
+            </div>
+            <button type="button" class="btn-exit-assessment" id="btnExitAssessment" title="Exit coding assessment">
+                <i class="bi bi-box-arrow-right"></i>
+                <span class="d-none d-sm-inline">Exit Assessment</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Mobile View Switcher Tabs -->
+    <div class="assessment-mobile-view-tabs" id="mobileViewTabs">
+        <button type="button" class="assessment-mobile-tab-btn active" id="tabMobileProblem">
+            <i class="bi bi-file-text me-1"></i>Problem
+        </button>
+        <button type="button" class="assessment-mobile-tab-btn" id="tabMobileEditor">
+            <i class="bi bi-code-square me-1"></i>Code & Console
+        </button>
+    </div>
+
+    <!-- 2. SPLIT WORKSPACE -->
+    <div class="assessment-workspace-split">
+
+        <!-- LEFT PANE: Problem Statement & Navigation (approx 40%) -->
+        <aside class="assessment-problem-pane" id="assessmentProblemPane">
+            
+            <!-- Navigation Header with Question Navigator -->
+            <div class="assessment-nav-header">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <span class="text-uppercase fw-bold font-monospace text-muted" style="font-size: 0.72rem; letter-spacing: 0.05em;">Questions</span>
+                    <span class="badge bg-light text-muted border font-monospace small" id="navigatorCountBadge">{{ questions }} Questions</span>
+                </div>
+
+                <!-- Proper Question Navigator List -->
+                <div class="question-nav-list" id="questionNavList">
+                    <!-- Dynamically populated by JS from questionsList -->
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="assessment-progress-wrapper mt-1">
+                    <div class="assessment-progress-bar-bg">
+                        <div class="assessment-progress-bar-fill" id="progressBarFill" style="width: 20%;"></div>
+                    </div>
+                    <span class="assessment-progress-text" id="progressText">Question 1 of {{ questions }}</span>
+                </div>
+            </div>
+
+            <!-- Problem Details Scroll Area -->
+            <div class="assessment-problem-content" id="problemContentArea">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1">
+                    <span class="badge bg-light text-muted border font-monospace small" id="problemHeaderNumber">Problem 1 of {{ questions }}</span>
+                    <span class="badge bg-warning-subtle text-warning font-monospace" id="problemDifficultyBadge">
+                        {{ difficulty }}
+                    </span>
+                </div>
+
+                <h1 class="assessment-problem-title" id="problemTitle">Loading Question...</h1>
+
+                <div class="problem-body-text" id="problemDescription">
+                    <!-- Populated dynamically -->
+                </div>
+
+                <!-- Examples Section -->
+                <div class="problem-section-title">
+                    <i class="bi bi-code-slash text-primary"></i>
+                    <span>Examples</span>
+                </div>
+                <div id="problemExamples">
+                    <!-- Populated dynamically -->
+                </div>
+
+                <!-- Constraints Section -->
+                <div class="problem-section-title">
+                    <i class="bi bi-shield-check text-primary"></i>
+                    <span>Constraints</span>
+                </div>
+                <ul class="problem-constraints-list" id="problemConstraints">
+                    <!-- Populated dynamically -->
+                </ul>
+            </div>
+        </aside>
+
+        <!-- RIGHT PANE: Code Editor & Console (approx 60%) -->
+        <main class="assessment-editor-pane" id="assessmentEditorPane">
+            
+            <!-- Editor Toolbar (Always Visible) -->
+            <div class="assessment-editor-toolbar">
+                <div class="editor-toolbar-left">
+                    <div class="editor-lang-badge">
+                        <i class="bi bi-filetype-py"></i>
+                        <span>{{ language }}</span>
+                    </div>
+                    <div class="editor-autosave-status" id="autoSaveStatus">
+                        <i class="bi bi-cloud-check text-success"></i>
+                        <span>Saved</span>
+                    </div>
+                </div>
+
+                <div class="editor-toolbar-right">
+                    <button type="button" class="btn-editor-action" id="btnResetCode" title="Reset code to default template">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                        <span>Reset</span>
+                    </button>
+                    <button type="button" class="btn-editor-action run-btn" id="btnRunCode" title="Run code against visible test cases">
+                        <i class="bi bi-play-fill fs-6"></i>
+                        <span>Run Code</span>
+                    </button>
+                    <button type="button" class="btn-editor-action submit-btn" id="btnToolbarSubmit" title="Please answer all questions before submitting" disabled>
+                        <i class="bi bi-send-check"></i>
+                        <span>Submit Solution</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Large Code Editor Canvas (Min-height 550px, Uses Vertical Height) -->
+            <div class="assessment-editor-canvas-box">
+                <div id="monacoEditorContainer"></div>
+                <textarea id="fallbackTextarea" class="editor-fallback-textarea" style="display: none;" spellcheck="false"></textarea>
+            </div>
+
+            <!-- Test Cases / Output Panel (Collapsible / Resizable) -->
+            <div class="assessment-test-panel" id="assessmentTestPanel">
+                <div class="test-panel-tabs-bar">
+                    <div class="d-flex align-items-center gap-1">
+                        <button type="button" class="test-panel-tab active" id="tabTestCases">
+                            <i class="bi bi-check2-square me-1"></i>Test Cases
+                        </button>
+                        <button type="button" class="test-panel-tab" id="tabOutput">
+                            <i class="bi bi-terminal me-1"></i>Output
+                        </button>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-link text-muted text-decoration-none p-0 ms-auto font-monospace small" id="btnTogglePanelCollapse" title="Collapse / Expand console">
+                        <i class="bi bi-chevron-down" id="iconPanelCollapse"></i>
+                    </button>
+                </div>
+
+                <!-- Test Cases Tab Content -->
+                <div class="test-panel-content-body" id="paneTestCases">
+                    <div id="testCasesList">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Output Tab Content -->
+                <div class="test-panel-content-body d-none" id="paneOutput">
+                    <pre class="output-console-box" id="outputConsole">No execution yet. Run your code to see results.</pre>
+                </div>
+            </div>
+
+            <!-- Bottom Action Bar (Always Visible) -->
+            <footer class="assessment-bottom-bar">
+                <div class="assessment-bottom-nav d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-outline-secondary btn-nav-prev" id="btnPrevQuestion">
+                        <i class="bi bi-chevron-left me-1"></i>Previous
+                    </button>
+                    <button type="button" class="btn btn-primary btn-nav-next" id="btnNextQuestion">
+                        Next Question<i class="bi bi-chevron-right ms-1"></i>
+                    </button>
+                </div>
+                <div class="text-muted small d-none d-lg-flex align-items-center gap-1.5 font-monospace ms-auto me-3">
+                    <i class="bi bi-shield-check text-success"></i>
+                    <span>Secure Isolated Sandbox Session</span>
+                </div>
+                <button type="button" class="btn-submit-solution" id="btnSubmitSolution" disabled title="Please answer all questions before submitting">
+                    <span>Submit Solution</span>
+                    <i class="bi bi-arrow-right"></i>
+                </button>
+            </footer>
+        </main>
+
+    </div>
+</div>
+
+<!-- ==========================================
+     MODALS
+     ========================================== -->
+
+<!-- 1. Exit Confirmation Modal -->
+<div id="exitAssessmentModal" class="coding-leave-modal-backdrop d-none" role="dialog" aria-modal="true" aria-labelledby="exitModalTitle">
+    <div class="coding-leave-modal-card">
+        <div class="mb-3 text-warning">
+            <i class="bi bi-exclamation-circle-fill" style="font-size: 2.75rem;"></i>
+        </div>
+        <h3 class="fw-bold mb-2 text-main" id="exitModalTitle" style="font-size: 1.35rem;">Exit Coding Assessment?</h3>
+        <p class="text-muted small mb-4" style="font-size: 0.9rem; line-height: 1.5;">
+            Your progress will be saved, but the assessment will not be submitted.
+        </p>
+        <div class="d-flex gap-2">
+            <button type="button" id="btnContinueAssessment" class="btn btn-outline-secondary w-50 py-2.5 rounded-pill fw-semibold">
+                Stay
+            </button>
+            <button type="button" id="btnConfirmExit" class="btn btn-danger w-50 py-2.5 rounded-pill fw-semibold">
+                Exit
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 2. Reset Code Modal -->
+<div id="resetCodeModal" class="coding-leave-modal-backdrop d-none" role="dialog" aria-modal="true" aria-labelledby="resetModalTitle">
+    <div class="coding-leave-modal-card">
+        <div class="mb-3 text-secondary">
+            <i class="bi bi-arrow-counterclockwise text-primary" style="font-size: 2.75rem;"></i>
+        </div>
+        <h3 class="fw-bold mb-2 text-main" id="resetModalTitle" style="font-size: 1.35rem;">Reset Code?</h3>
+        <p class="text-muted small mb-4" style="font-size: 0.9rem; line-height: 1.5;">
+            This will replace your current code with the initial starter template for this problem. Any unsaved changes will be lost.
+        </p>
+        <div class="d-flex gap-2">
+            <button type="button" id="btnCancelReset" class="btn btn-outline-secondary w-50 py-2.5 rounded-pill fw-semibold">
+                Cancel
+            </button>
+            <button type="button" id="btnConfirmReset" class="btn btn-warning w-50 py-2.5 rounded-pill fw-semibold">
+                Reset Code
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 3. Final Submit Assessment Confirmation Modal -->
+<div id="submitSolutionModal" class="coding-leave-modal-backdrop d-none" role="dialog" aria-modal="true" aria-labelledby="submitModalTitle">
+    <div class="coding-leave-modal-card" style="max-width: 480px;">
+        <div class="mb-2 text-primary">
+            <i class="bi bi-send-check-fill text-primary" style="font-size: 2.5rem;"></i>
+        </div>
+        <h3 class="fw-bold mb-2 text-main" id="submitModalTitle" style="font-size: 1.35rem;">Submit Coding Assessment?</h3>
+        
+        <p class="text-muted small mb-3" style="line-height: 1.5;">
+            Your solutions will be evaluated against all test cases (including hidden test cases) and your final assessment report will be generated.
+        </p>
+
+        <!-- Status Summary -->
+        <div class="p-3 rounded-3 bg-light border border-base mb-3 text-start font-monospace small">
+            <div class="d-flex justify-content-between mb-1.5">
+                <span class="text-muted"><i class="bi bi-list-check me-1"></i>Questions Answered:</span>
+                <strong class="text-main" id="submitModalAnsweredCount">0 / 5</strong>
+            </div>
+            <div class="d-flex justify-content-between mb-1.5">
+                <span class="text-muted"><i class="bi bi-check2-all me-1"></i>Visible Tests Passed:</span>
+                <strong class="text-success" id="submitModalPassedTests">0 passed</strong>
+            </div>
+            <div class="d-flex justify-content-between">
+                <span class="text-muted"><i class="bi bi-stopwatch me-1"></i>Time Used:</span>
+                <strong class="text-main" id="submitModalTimeUsed">0m 0s</strong>
+            </div>
+        </div>
+
+        <!-- Unanswered Questions Alert (Dynamic) -->
+        <div id="submitModalUnansweredWarning" class="alert alert-warning border-0 p-2.5 rounded-3 mb-3 small d-none text-start">
+            <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>
+            <span>You have unanswered questions. Are you sure you want to submit?</span>
+        </div>
+
+        <div class="alert alert-light border small text-muted p-2 rounded-2 mb-3 text-start" style="font-size: 0.78rem;">
+            <i class="bi bi-info-circle text-primary me-1"></i>
+            Once submitted, your submission cannot be changed.
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="button" id="btnCancelSubmit" class="btn btn-outline-secondary w-50 py-2.5 rounded-pill fw-semibold">
+                Continue Coding
+            </button>
+            <button type="button" id="btnConfirmSubmit" class="btn btn-primary w-50 py-2.5 rounded-pill fw-semibold d-inline-flex align-items-center justify-content-center gap-1.5">
+                <span id="submitBtnText">Submit Assessment</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 4. Submitting / Evaluating Overlay -->
+<div id="submittingOverlay" class="coding-leave-modal-backdrop d-none" role="dialog" aria-modal="true">
+    <div class="coding-leave-modal-card text-center" style="max-width: 440px;">
+        <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
+        <h4 class="fw-bold text-main mb-2">Evaluating Assessment</h4>
+        <p class="text-muted small mb-0" style="line-height: 1.6;">
+            Running all solutions through secure isolated Docker containers against visible and hidden test cases. Please wait...
+        </p>
+    </div>
+</div>
+
+<!-- 5. Time's Up Modal -->
+<div id="timesUpModal" class="coding-leave-modal-backdrop d-none" role="dialog" aria-modal="true" aria-labelledby="timesUpTitle">
+    <div class="coding-leave-modal-card text-center" style="max-width: 440px;">
+        <div class="mb-3 text-danger">
+            <i class="bi bi-alarm-fill text-danger" style="font-size: 2.75rem;"></i>
+        </div>
+        <h3 class="fw-bold mb-2 text-main" id="timesUpTitle" style="font-size: 1.35rem;">Time's Up</h3>
+        <p class="text-muted small mb-4" style="line-height: 1.5;">
+            The allocated duration for this coding assessment has ended. Your solutions are being evaluated and submitted.
+        </p>
+        <div class="spinner-border spinner-border-sm text-primary mb-2"></div>
+        <div class="small text-muted font-monospace">Submitting your assessment...</div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<!-- Monaco Editor AMD Loader -->
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.34.1/min/vs/loader.js"></script>
+
+<!-- Server Assessment Context Payload -->
+<script>
+    window.ASSESSMENT_CONFIG = {
+        role: {{ role|tojson }},
+        domain: {{ domain|tojson }},
+        difficulty: {{ difficulty|tojson }},
+        language: {{ language|tojson }},
+        questionsCount: {{ questions|tojson }},
+        duration: {{ duration|tojson }},
+        durationSeconds: {{ duration_seconds|tojson }},
+        questionsList: {{ questions_list|tojson }},
+        savedAnswers: {{ saved_answers|tojson }}
+    };
+</script>
+
+<!-- Phase 3 Production Assessment Controller -->
+<script src="{{ url_for('static', filename='js/coding_assessment.js') }}"></script>
+{% endblock %}
