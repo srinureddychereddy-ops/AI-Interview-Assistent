@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Profile — Interview.ai{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0 fade-in">
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-start mb-5">
+        <div>
+            <span class="product-kicker"><i class="bi bi-sliders2"></i> Workspace settings</span>
+            <h1 class="settings-product-title">Make Interview.ai yours.</h1>
+            <p class="text-muted settings-product-subtitle">Manage your identity, experience preferences, and connected account from one calm workspace.</p>
+        </div>
+    </div>
+
+    <section class="settings-command-grid" aria-label="Workspace preferences" data-reveal>
+        <article class="settings-command-card">
+            <span class="settings-command-icon"><i class="bi bi-palette2"></i></span>
+            <div><small>APPEARANCE</small><h2>Theme preference</h2><p>Choose the interface that feels best.</p></div>
+            <div class="settings-theme-choice" role="group" aria-label="Color theme">
+                <button type="button" data-setting-theme="light"><i class="bi bi-sun"></i> Light</button>
+                <button type="button" data-setting-theme="dark"><i class="bi bi-moon-stars"></i> Dark</button>
+            </div>
+        </article>
+        <article class="settings-command-card">
+            <span class="settings-command-icon cyan"><i class="bi bi-bell"></i></span>
+            <div><small>NOTIFICATIONS</small><h2>Preparation nudges</h2><p>Keep your practice rhythm consistent.</p></div>
+            <label class="product-switch"><input type="checkbox" id="settingsNotifications" checked><span></span><b>Enabled</b></label>
+        </article>
+        <article class="settings-command-card">
+            <span class="settings-command-icon emerald"><i class="bi bi-google"></i></span>
+            <div><small>CONNECTED ACCOUNT</small><h2>Google identity</h2><p>{{ current_user.email }}</p></div>
+            <span class="settings-connected"><i></i> Connected</span>
+        </article>
+        <article class="settings-command-card">
+            <span class="settings-command-icon amber"><i class="bi bi-shield-lock"></i></span>
+            <div><small>SECURITY</small><h2>Protected workspace</h2><p>Sessions and resume data remain private.</p></div>
+            <a href="{{ url_for('forgot_password') }}">Reset password <i class="bi bi-arrow-up-right"></i></a>
+        </article>
+    </section>
+
+    <div class="profile-page-container settings-profile-editor">
+        <form action="{{ url_for('profile_edit') }}" method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
+            
+            <!-- Profile Photo Section -->
+            <div class="profile-section">
+                <h5 class="profile-section-title">Profile Photo</h5>
+                <div class="row align-items-center gy-3">
+                    <div class="col-sm-auto text-center">
+                        <div class="profile-picture-container" onclick="document.getElementById('profilePictureInput').click();" title="Click to upload new photo">
+                            <img id="profilePicturePreview" 
+                                 src="{{ url_for('static', filename='uploads/profile/' + (profile.profile_image_filename or 'default.png')) }}" 
+                                 alt="Profile Picture" data-initial="{{ current_user.username[:1] }}" onerror="handleAvatarError(this)">
+                            <div class="profile-picture-edit-overlay"><i class="bi bi-camera-fill"></i></div>
+                            <input type="file" id="profilePictureInput" name="profile_picture" class="d-none" accept="image/png, image/jpeg, image/jpg">
+                            <input type="hidden" name="remove_profile_picture" id="removeProfilePictureInput" value="0">
+                        </div>
+                    </div>
+                    <div class="col-sm">
+                        <p class="text-main fw-bold mb-1" style="font-size: 0.9rem;">Change Avatar</p>
+                        <p class="text-muted small mb-3">For best results, upload a square image (e.g. 400x400px) in JPG or PNG format. Max size 2MB.</p>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-glass" onclick="document.getElementById('profilePictureInput').click();">
+                                <i class="bi bi-cloud-arrow-up-fill me-1 text-primary"></i> Upload Photo
+                            </button>
+                            <button type="button" id="removeProfilePictureBtn" class="btn btn-sm btn-glass text-danger-hover">
+                                <i class="bi bi-trash3-fill me-1"></i> Remove Photo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Personal Information -->
+            <div class="profile-section">
+                <h5 class="profile-section-title">Personal Information</h5>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="firstName" class="form-label">First Name</label>
+                        <input type="text" class="form-control" id="firstName" name="first_name" placeholder="John" value="{{ profile.first_name or '' }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="lastName" class="form-label">Last Name</label>
+                        <input type="text" class="form-control" id="lastName" name="last_name" placeholder="Doe" value="{{ profile.last_name or '' }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="email" class="form-label">Email Address</label>
+                        <input type="email" class="form-control" id="email" name="email" value="{{ current_user.email }}" readonly style="background:var(--bg-app);cursor:not-allowed;">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="phone" class="form-label">Phone Number</label>
+                        <input type="tel" class="form-control" id="phone" name="phone_number" placeholder="+1 (555) 000-0000" value="{{ profile.phone_number or '' }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="gender" class="form-label">Gender</label>
+                        <select class="form-select" id="gender" name="gender">
+                            <option value="" {% if not profile.gender %}selected{% endif %}>Select Gender</option>
+                            <option value="Male" {% if profile.gender == 'Male' %}selected{% endif %}>Male</option>
+                            <option value="Female" {% if profile.gender == 'Female' %}selected{% endif %}>Female</option>
+                            <option value="Other" {% if profile.gender == 'Other' %}selected{% endif %}>Other</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="dob" class="form-label">Date of Birth</label>
+                        <input type="date" class="form-control" id="dob" name="date_of_birth" value="{{ profile.date_of_birth or '' }}">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Academic Information -->
+            <div class="profile-section">
+                <h5 class="profile-section-title">Academic Information</h5>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="collegeName" class="form-label">College Name</label>
+                        <input type="text" class="form-control" id="collegeName" name="college_name" placeholder="e.g. Stanford University" value="{{ profile.college_name or '' }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="university" class="form-label">University</label>
+                        <input type="text" class="form-control" id="university" name="university" placeholder="e.g. Stanford University" value="{{ profile.university or '' }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="degree" class="form-label">Degree</label>
+                        <input type="text" class="form-control" id="degree" name="degree" placeholder="e.g. Bachelor of Science" value="{{ profile.degree or '' }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="branch" class="form-label">Branch / Major</label>
+                        <input type="text" class="form-control" id="branch" name="branch" placeholder="e.g. Computer Science" value="{{ profile.branch or '' }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="gradYear" class="form-label">Graduation Year</label>
+                        <input type="number" class="form-control" id="gradYear" name="graduation_year" placeholder="e.g. 2026" value="{{ profile.graduation_year or '' }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="cgpa" class="form-label">CGPA / GPA</label>
+                        <input type="number" step="0.01" class="form-control" id="cgpa" name="cgpa" placeholder="e.g. 3.8" value="{{ profile.cgpa or '' }}">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Professional Information -->
+            <div class="profile-section">
+                <h5 class="profile-section-title">Professional Information</h5>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label for="preferredDomain" class="form-label">Preferred Target Role</label>
+                        <select class="form-select" id="preferredDomain" name="preferred_domain">
+                            {% set domains = ["Software Engineer", "Full Stack Developer", "Frontend Developer", "Backend Developer", "AI Engineer", "Data Scientist", "Cloud & DevOps", "Cyber Security", "QA Engineer", "Product Manager"] %}
+                            <option value="" {% if not profile.preferred_domain %}selected{% endif %}>Select target role...</option>
+                            {% for domain in domains %}
+                            <option value="{{ domain }}" {% if profile.preferred_domain == domain %}selected{% endif %}>{{ domain }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="languages" class="form-label">Programming Languages (Comma-separated)</label>
+                        <input type="text" class="form-control" id="languages" name="programming_languages" placeholder="e.g. Python, JavaScript, SQL" value="{{ profile.programming_languages or '' }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="skills" class="form-label">Key Skills (Comma-separated)</label>
+                        <input type="text" class="form-control" id="skills" name="skills" placeholder="e.g. Django, React, AWS, Docker" value="{{ profile.skills or '' }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="linkedin" class="form-label">LinkedIn Profile URL</label>
+                        <input type="url" class="form-control" id="linkedin" name="linkedin_profile" placeholder="https://linkedin.com/in/username" value="{{ profile.linkedin_profile or '' }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="github" class="form-label">GitHub Profile URL</label>
+                        <input type="url" class="form-control" id="github" name="github_profile" placeholder="https://github.com/username" value="{{ profile.github_profile or '' }}">
+                    </div>
+                    <div class="col-12">
+                        <label for="portfolio" class="form-label">Portfolio Website URL</label>
+                        <input type="url" class="form-control" id="portfolio" name="portfolio_website" placeholder="https://username.dev" value="{{ profile.portfolio_website or '' }}">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Upload Resume (PDF)</label>
+                        <div class="resume-upload-wrapper">
+                            <span id="resumeFilename" class="resume-filename">
+                                <i class="bi bi-file-earmark-pdf text-danger me-1"></i>
+                                {{ profile.resume_filename or 'Select a PDF resume to attach...' }}
+                            </span>
+                            <label for="resumeUploadInput" class="btn btn-glass btn-sm mb-0">Choose File</label>
+                            <input type="file" id="resumeUploadInput" name="resume_upload" class="d-none" accept=".pdf">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="d-flex justify-content-end gap-3 mt-4">
+                <a href="{{ url_for('profile_view') }}" class="btn btn-glass px-4">Cancel</a>
+                <button type="submit" class="btn btn-premium px-5">Save Profile</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/profile.js') }}"></script>
+{% endblock %}

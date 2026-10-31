@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+{% block title %}Interview Setup — Interview.ai{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Specific Styles for Interview Setup to match the SaaS layout */
+.setup-track-card {
+    display: block;
+    padding: 20px;
+    border-radius: var(--radius-lg);
+    border: 1.5px solid var(--border-base);
+    background: var(--bg-card);
+    cursor: pointer;
+    transition: transform var(--t-base) var(--ease-spring), border-color var(--t-fast), box-shadow var(--t-base);
+    position: relative;
+    height: 100%;
+}
+.setup-track-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-md);
+}
+.setup-track-card.active {
+    border-color: var(--color-primary);
+    background: var(--color-primary-light);
+    box-shadow: 0 0 0 2px var(--color-primary);
+}
+.setup-track-card .form-check-input {
+    margin-top: 0.25rem;
+}
+.setup-track-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+.setup-track-desc {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+.directive-item {
+    display: flex;
+    gap: 16px;
+    align-items: start;
+    padding: 16px;
+    background: var(--bg-app);
+    border: 1px solid var(--border-base);
+    border-radius: var(--radius-md);
+}
+.directive-icon {
+    width: 38px; height: 38px;
+    background: var(--color-primary-light);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-primary);
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0 fade-in">
+    
+    <!-- Title Section -->
+    <div class="d-flex justify-content-between align-items-start mb-5">
+        <div>
+            <p class="section-eyebrow mb-1">Assessment Engine</p>
+            <h1 class="section-title mb-1">Interview Setup</h1>
+            <p class="text-muted" style="font-size:0.875rem;">Configure your assessment vectors to calibrate the AI behavior simulation.</p>
+        </div>
+    </div>
+
+    <!-- Configuration Matrix Form -->
+    <div class="row g-4">
+        <div class="col-xl-8 col-lg-7">
+            <div class="card-glass">
+                <p class="card-heading mb-4"><i class="bi bi-sliders me-2 text-primary"></i>Environment Settings</p>
+                
+                <form action="{{ url_for('interview_setup') }}" method="POST" class="d-flex flex-column gap-4">
+                    <!-- Dropdown Select Grid -->
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-uppercase tracking-wider">Target Engineering Role</label>
+                            <select name="role" class="form-select" required>
+                                <option value="" disabled selected hidden>Choose target profile...</option>
+                                <option value="backend">Backend Systems Engineer</option>
+                                <option value="frontend">Frontend UI Architect</option>
+                                <option value="fullstack">Full Stack Engineer</option>
+                                <option value="ai">Machine Learning / AI Engineer</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-uppercase tracking-wider">Target Seniority Tier</label>
+                            <select name="seniority" class="form-select" required>
+                                <option value="associate">Associate / Fresher Level</option>
+                                <option value="mid">Mid-Level Engineer</option>
+                                <option value="senior">Senior Staff Architect</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Interactive Radio Track Selectors -->
+                    <div>
+                        <label class="form-label text-uppercase tracking-wider mb-3 d-block">Primary Focus Track</label>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="setup-track-card active" id="labelDS">
+                                    <div class="form-check p-0 m-0">
+                                        <input class="form-check-input ms-0 me-2" type="radio" name="focus_track" id="trackDS" value="dsa" checked>
+                                        <span class="setup-track-title">Data Structures</span>
+                                        <span class="setup-track-desc d-block mt-2">Algorithms, complexity analysis, trees, arrays, dynamic programming.</span>
+                                    </div>
+                                </label>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="setup-track-card" id="labelSYS">
+                                    <div class="form-check p-0 m-0">
+                                        <input class="form-check-input ms-0 me-2" type="radio" name="focus_track" id="trackSYS" value="system_design">
+                                        <span class="setup-track-title">System Design</span>
+                                        <span class="setup-track-desc d-block mt-2">Scalability, database sharding, microservices, caches, queue systems.</span>
+                                    </div>
+                                </label>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="setup-track-card" id="labelBEH">
+                                    <div class="form-check p-0 m-0">
+                                        <input class="form-check-input ms-0 me-2" type="radio" name="focus_track" id="trackBEH" value="behavioral">
+                                        <span class="setup-track-title">Behavioral Labs</span>
+                                        <span class="setup-track-desc d-block mt-2">STAR methodology, leadership values, team collaboration, resolution templates.</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Range Bar Slider -->
+                    <div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <label class="form-label text-uppercase tracking-wider mb-0">Simulation Complexity Intensity</label>
+                            <span class="text-primary small fw-bold" id="intensityValue">Level 3</span>
+                        </div>
+                        <input type="range" class="form-range" min="1" max="5" step="1" value="3" name="intensity" id="intensitySlider" style="accent-color: var(--color-primary);">
+                    </div>
+
+                    <button type="submit" class="btn btn-premium btn-lg w-100 py-3 mt-2">
+                        <i class="bi bi-cpu-fill"></i> Initialize Simulation Environment
+                    </button>
+                </form>
+
+            </div>
+        </div>
+
+        <!-- Sidebar Informational Parameters -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="card-glass h-100 d-flex flex-column gap-4">
+                <div>
+                    <h5 class="fw-bold mb-2 text-main" style="font-size:0.95rem;letter-spacing:-0.02em;">Simulation Directives</h5>
+                    <p class="text-muted small mb-0">Your configuration profile translates into customized context parameters fed directly into the Gemini pipeline matrix.</p>
+                </div>
+                
+                <hr class="m-0" style="border-color: var(--border-base);">
+                
+                <div class="directive-item">
+                    <div class="directive-icon text-primary"><i class="bi bi-shield-lock-fill"></i></div>
+                    <div>
+                        <p class="mb-1 fw-bold text-main small">Isolated Session Spaces</p>
+                        <span class="text-muted small d-block" style="line-height: 1.45;">Each instance spins up isolated context windows to avoid memory pollution between system runs.</span>
+                    </div>
+                </div>
+
+                <div class="directive-item">
+                    <div class="directive-icon text-purple" style="color: var(--color-purple) !important; background: var(--color-purple-light);"><i class="bi bi-clock-history"></i></div>
+                    <div>
+                        <p class="mb-1 fw-bold text-main small">Live Response Trapping</p>
+                        <span class="text-muted small d-block" style="line-height: 1.45;">Calculates code layout performance vectors, runtime optimization speeds, and speech syntax clarity.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const slider = document.getElementById("intensitySlider");
+        const valIndicator = document.getElementById("intensityValue");
+        
+        if (slider && valIndicator) {
+            slider.addEventListener("input", function() {
+                valIndicator.textContent = "Level " + this.value;
+            });
+        }
+
+        // Handle Active Track Card Styling
+        const trackCards = document.querySelectorAll(".setup-track-card");
+        trackCards.forEach(card => {
+            const radioInput = card.querySelector("input[type='radio']");
+            if (radioInput) {
+                radioInput.addEventListener("change", function() {
+                    trackCards.forEach(c => c.classList.remove("active"));
+                    if (this.checked) {
+                        card.classList.add("active");
+                    }
+                });
+            }
+        });
+    });
+</script>
+{% endblock %}

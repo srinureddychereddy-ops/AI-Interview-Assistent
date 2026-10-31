@@ -1,0 +1,436 @@
+{% extends "base.html" %}
+{% block title %}Resume Analysis — {{ analysis.job_role or 'Interview.ai' }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .resume-detail-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.5rem 1rem 4rem;
+  }
+  .resume-glass-card {
+    background: var(--bg-card, #ffffff);
+    border: 1px solid var(--border-base, #e2e8f0);
+    border-radius: 20px;
+    padding: 1.75rem;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .resume-detail-hero {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--bg-card) 96%, transparent), color-mix(in srgb, #6366f1 6%, transparent));
+    border: 1px solid rgba(99, 102, 241, 0.2);
+  }
+  .hero-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 14px;
+    border-radius: 50px;
+    background: rgba(99, 102, 241, 0.1);
+    color: #4f46e5;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+  }
+  .hero-score-orbit {
+    width: 170px;
+    height: 170px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    border-radius: 50%;
+    background: conic-gradient(var(--score-color, #4f46e5) calc(var(--score-val, 0) * 1%), rgba(226, 232, 240, 0.4) 0);
+    box-shadow: 0 0 35px rgba(79, 70, 229, 0.15);
+    transition: background 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .hero-score-inner {
+    width: 134px;
+    height: 134px;
+    border-radius: 50%;
+    background: var(--bg-card, #ffffff);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.05);
+  }
+  .hero-score-inner strong {
+    font-size: 2.5rem;
+    font-weight: 900;
+    line-height: 1;
+  }
+  .hero-score-inner small {
+    font-size: 0.62rem;
+    color: var(--text-muted, #64748b);
+    margin-top: 4px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+  }
+  .breakdown-card {
+    background: var(--bg-card, #ffffff);
+    border: 1px solid var(--border-base, #e2e8f0);
+    border-radius: 16px;
+    padding: 1.25rem;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .insight-list-row {
+    padding: 14px 18px;
+    border-radius: 14px;
+    background: rgba(248, 250, 252, 0.9);
+    border: 1px solid var(--border-base, #e2e8f0);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .insight-list-row.warning-row {
+    background: rgba(254, 243, 199, 0.3);
+    border-color: rgba(245, 158, 11, 0.25);
+  }
+  .insight-list-row.gap-row {
+    background: rgba(254, 226, 226, 0.3);
+    border-color: rgba(239, 68, 68, 0.25);
+  }
+  .recommendation-card {
+    display: flex;
+    gap: 16px;
+    padding: 1.25rem;
+    border-radius: 16px;
+    background: rgba(248, 250, 252, 0.8);
+    border: 1px solid var(--border-base, #e2e8f0);
+    margin-bottom: 12px;
+  }
+  .recommendation-num {
+    font-size: 1.1rem;
+    font-weight: 900;
+    color: #4f46e5;
+    background: rgba(99, 102, 241, 0.1);
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+  }
+  .keyword-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 15px;
+    border-radius: 12px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    margin-right: 8px;
+    margin-bottom: 10px;
+    background: rgba(99, 102, 241, 0.08);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    color: #4f46e5;
+  }
+  .cta-gate-card {
+    border-radius: 22px;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .cta-gate-card.eligible {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(99, 102, 241, 0.05));
+    border: 2px solid rgba(16, 185, 129, 0.3);
+  }
+  .cta-gate-card.locked {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(239, 68, 68, 0.04));
+    border: 2px solid rgba(245, 158, 11, 0.3);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="resume-detail-page fade-in">
+  
+  <!-- SECTION A: HEADER -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+        <a href="{{ url_for('history') }}" class="btn btn-sm btn-glass rounded-pill px-3 me-2">
+          <i class="bi bi-arrow-left me-1"></i> Back to History
+        </a>
+        <span class="badge bg-success-subtle text-success rounded-pill px-3 py-1 font-monospace">
+          <i class="bi bi-check-circle-fill me-1"></i> Analysis Complete
+        </span>
+      </div>
+      <h1 class="h2 font-extrabold text-main mb-1">Resume Analysis</h1>
+      <div class="d-flex align-items-center gap-3 text-muted small flex-wrap">
+        <span><i class="bi bi-briefcase text-primary me-1"></i> <strong>Target Role:</strong> {{ analysis.job_role or record.job_role or 'UI/UX Designer' }}</span>
+        {% if record and record.filename %}
+        <span><i class="bi bi-file-earmark-pdf text-info me-1"></i> <strong>File:</strong> {{ record.filename }}</span>
+        {% endif %}
+        {% if record and record.created_at %}
+        <span><i class="bi bi-calendar3 text-muted me-1"></i> <strong>Date:</strong> {{ record.created_at.strftime('%b %d, %Y') }}</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <a href="{{ url_for('resume_analyzer') }}" class="btn btn-glass btn-sm rounded-pill px-3">
+        <i class="bi bi-cloud-arrow-up me-1"></i> Analyze Another Resume
+      </a>
+    </div>
+  </div>
+
+  {% set score = (analysis.ats_score or 0) | int %}
+  {% set score_color = '#10b981' if score >= 80 else '#3b82f6' if score >= 60 else '#f59e0b' if score >= 40 else '#ef4444' %}
+  {% set match_level = analysis.match_level or ('Strong Match' if score >= 80 else 'Good Match' if score >= 60 else 'Moderate Match' if score >= 40 else 'Low Match') %}
+  {% set match_rating = 'Needs significant improvement' if score < 40 else ('Fair alignment with target role' if score < 60 else ('Good alignment with key requirements' if score < 80 else 'Strong alignment with target role')) %}
+
+  <!-- SECTION B: ATS SCORE HERO -->
+  <section class="resume-glass-card resume-detail-hero mb-4">
+    <div class="row align-items-center g-4">
+      <div class="col-lg-4 text-center">
+        <div class="hero-score-orbit" id="heroScoreOrbit" style="--score-val: {{ score }}; --score-color: {{ score_color }};">
+          <div class="hero-score-inner">
+            <strong id="heroScoreNumber" style="color: {{ score_color }}">{{ score }}%</strong>
+            <small>ATS MATCH SCORE</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-8">
+        <div class="hero-kicker"><i class="bi bi-stars"></i> ATS MATCH EVALUATION</div>
+        <h2 class="h3 font-extrabold mb-1" style="color: {{ score_color }}">{{ match_level }}</h2>
+        <p class="text-muted mb-3 fs-6 italic">"{{ match_rating }}"</p>
+
+        <div class="mb-3">
+          <div class="d-flex justify-content-between small mb-1 fw-bold">
+            <span class="text-main">Overall Role Match Index</span>
+            <span style="color: {{ score_color }}">{{ score }}%</span>
+          </div>
+          <div class="progress" style="height: 10px; border-radius: 10px; background: rgba(0,0,0,0.06);">
+            <div class="progress-bar rounded-pill" role="progressbar" style="width: {{ score }}%; background: {{ score_color }};"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION C: PROFESSIONAL OVERVIEW (SUMMARY) -->
+  {% if analysis.summary %}
+  <section class="resume-glass-card mb-4">
+    <small class="text-muted fw-bold font-monospace d-block mb-1 text-uppercase" style="letter-spacing: 1px;">PROFESSIONAL OVERVIEW</small>
+    <h3 class="h6 font-extrabold text-main mb-3 d-flex align-items-center gap-2">
+      <i class="bi bi-card-text text-primary"></i> Resume Summary
+    </h3>
+    <p class="text-secondary lh-lg mb-0" style="font-size: 0.95rem; white-space: pre-line;">
+      {{ analysis.summary }}
+    </p>
+  </section>
+  {% endif %}
+
+  <!-- SECTION D: DETAILED SCORE BREAKDOWN -->
+  <section class="mb-4">
+    <small class="text-muted fw-bold font-monospace d-block mb-1 text-uppercase" style="letter-spacing: 1px;">METRICS</small>
+    <h3 class="h6 font-extrabold text-main mb-3 d-flex align-items-center gap-2">
+      <i class="bi bi-bar-chart-steps text-primary"></i> Detailed Score Breakdown
+    </h3>
+    <div class="row g-3">
+      {% if analysis.score_breakdown and analysis.score_breakdown is mapping and analysis.score_breakdown|length > 0 %}
+        {% for key, val in analysis.score_breakdown.items() %}
+        {% set val_int = (val or 0) | int %}
+        {% set bar_color = '#10b981' if val_int >= 80 else '#3b82f6' if val_int >= 60 else '#f59e0b' if val_int >= 40 else '#ef4444' %}
+        <div class="col-md-4 col-sm-6">
+          <div class="breakdown-card">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <span class="fw-bold text-main small">{{ key|replace('_', ' ')|title }}</span>
+              <span class="font-monospace fw-bold h6 mb-0" style="color: {{ bar_color }};">{{ val_int }}%</span>
+            </div>
+            <div class="progress" style="height: 8px; border-radius: 8px; background: rgba(0,0,0,0.06);">
+              <div class="progress-bar rounded-pill" style="width: {{ val_int }}%; background: {{ bar_color }};"></div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        {% set categories = [
+          ('Technical Skills', analysis.technical_score, '#6366f1'),
+          ('Work Experience', analysis.experience_score, '#8b5cf6'),
+          ('Education Alignment', analysis.education_score, '#f59e0b'),
+          ('Projects Impact', analysis.projects_score, '#10b981'),
+          ('Keyword Match', analysis.keyword_score, '#06b6d4'),
+          ('Format & Grammar', analysis.grammar_score, '#64748b')
+        ] %}
+        {% for title, val, color in categories %}
+        <div class="col-md-4 col-sm-6">
+          <div class="breakdown-card">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <span class="fw-bold text-main small">{{ title }}</span>
+              {% if val is not none %}
+              <span class="font-monospace fw-bold h6 mb-0" style="color: {{ color }};">{{ val|int }}%</span>
+              {% else %}
+              <span class="badge bg-secondary-subtle text-muted small">Not evaluated</span>
+              {% endif %}
+            </div>
+            <div class="progress" style="height: 8px; border-radius: 8px; background: rgba(0,0,0,0.06);">
+              {% if val is not none %}
+              <div class="progress-bar rounded-pill" style="width: {{ val|int }}%; background: {{ color }};"></div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- SECTION E: STRENGTHS & SECTION F: MISSING REQUIREMENTS GRID -->
+  <div class="row g-4 mb-4">
+    <div class="col-lg-6">
+      <section class="resume-glass-card h-100">
+        <small class="text-muted fw-bold font-monospace d-block mb-1 text-uppercase" style="letter-spacing: 1px;">WHAT STANDS OUT</small>
+        <h3 class="h6 font-extrabold text-success mb-3 d-flex align-items-center gap-2">
+          <i class="bi bi-check-circle-fill"></i> Strengths
+        </h3>
+        {% for item in analysis.strengths %}
+        <div class="insight-list-row">
+          <i class="bi bi-check-lg text-success fs-5 flex-shrink-0"></i>
+          <span class="text-main small lh-base">{{ item }}</span>
+        </div>
+        {% else %}
+        <p class="text-muted small mb-0">No strengths identified.</p>
+        {% endfor %}
+      </section>
+    </div>
+
+    <div class="col-lg-6">
+      <section class="resume-glass-card h-100">
+        <small class="text-muted fw-bold font-monospace d-block mb-1 text-uppercase" style="letter-spacing: 1px;">WHAT'S MISSING</small>
+        <h3 class="h6 font-extrabold text-warning mb-3 d-flex align-items-center gap-2">
+          <i class="bi bi-exclamation-triangle-fill"></i> Missing Requirements
+        </h3>
+        {% for item in (analysis.missing_requirements or analysis.missing_keywords) %}
+        <div class="insight-list-row warning-row">
+          <i class="bi bi-exclamation-circle text-warning fs-5 flex-shrink-0"></i>
+          <span class="text-main small lh-base">{{ item }}</span>
+        </div>
+        {% else %}
+        <p class="text-muted small mb-0">No missing requirements identified.</p>
+        {% endfor %}
+      </section>
+    </div>
+  </div>
+
+  <!-- SECTION G: RESPONSIBILITY GAPS -->
+  {% if analysis.responsibility_gaps %}
+  <section class="resume-glass-card mb-4">
+    <small class="text-muted fw-bold font-monospace d-block mb-1 text-uppercase" style="letter-spacing: 1px;">GAPS IDENTIFIED</small>
+    <h3 class="h6 font-extrabold text-danger mb-3 d-flex align-items-center gap-2">
+      <i class="bi bi-slash-circle text-danger"></i> Responsibility Gaps
+    </h3>
+    {% for gap in analysis.responsibility_gaps %}
+    <div class="insight-list-row gap-row">
+      <i class="bi bi-x-circle text-danger fs-5 flex-shrink-0"></i>
+      <span class="text-main small lh-base">{{ gap }}</span>
+    </div>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  <!-- SECTION H: RESUME IMPROVEMENTS -->
+  {% if analysis.resume_improvements or analysis.suggestions or analysis.recommendations %}
+  <section class="resume-glass-card mb-4">
+    <small class="text-muted fw-bold font-monospace d-block mb-1 text-uppercase" style="letter-spacing: 1px;">HOW TO IMPROVE YOUR RESUME</small>
+    <h3 class="h6 font-extrabold text-main mb-3 d-flex align-items-center gap-2">
+      <i class="bi bi-lightbulb-fill text-primary"></i> Resume Improvements
+    </h3>
+    {% for tip in (analysis.resume_improvements or analysis.suggestions or analysis.recommendations) %}
+    <div class="recommendation-card">
+      <div class="recommendation-num">0{{ loop.index }}</div>
+      <div>
+        <h4 class="h6 fw-bold text-main mb-1">Recommendation #0{{ loop.index }}</h4>
+        <p class="text-secondary small mb-0 lh-base">{{ tip }}</p>
+      </div>
+    </div>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  <!-- SECTION I: KEYWORD OPPORTUNITIES -->
+  {% if analysis.keyword_opportunities or analysis.matched_keywords %}
+  <section class="resume-glass-card mb-4">
+    <small class="text-muted fw-bold font-monospace d-block mb-1 text-uppercase" style="letter-spacing: 1px;">OPTIMIZATION</small>
+    <h3 class="h6 font-extrabold text-main mb-3 d-flex align-items-center gap-2">
+      <i class="bi bi-tags-fill text-indigo"></i> Keyword Opportunities
+    </h3>
+    <div class="d-flex flex-wrap">
+      {% for kw in (analysis.keyword_opportunities or analysis.matched_keywords) %}
+      <span class="keyword-chip"><i class="bi bi-tag-fill me-1"></i> {{ kw }}</span>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- SECTION J: FINAL RECOMMENDATION -->
+  {% if analysis.final_recommendation %}
+  <section class="resume-glass-card mb-4" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(79, 70, 229, 0.02)); border: 1.5px solid rgba(99, 102, 241, 0.25);">
+    <small class="text-primary fw-bold font-monospace d-block mb-1 text-uppercase" style="letter-spacing: 1px;">EXECUTIVE CONCLUSION</small>
+    <h3 class="h6 font-extrabold text-main mb-2 d-flex align-items-center gap-2">
+      <i class="bi bi-award-fill text-primary"></i> Final Recommendation
+    </h3>
+    <p class="text-secondary lh-lg mb-0" style="font-size: 0.95rem;">
+      {{ analysis.final_recommendation }}
+    </p>
+  </section>
+  {% endif %}
+
+  <!-- SECTION K: NEXT STEP (80% ATS ELIGIBILITY GATE CTA) -->
+  {% set is_eligible = score >= 80 %}
+  <section class="cta-gate-card {% if is_eligible %}eligible{% else %}locked{% endif %}">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-4">
+      <div>
+        <div class="d-flex align-items-center gap-2 mb-2">
+          {% if is_eligible %}
+          <span class="badge bg-success text-white rounded-pill px-3 py-1 font-monospace"><i class="bi bi-unlock-fill me-1"></i> Aptitude Unlocked</span>
+          {% else %}
+          <span class="badge bg-warning text-dark rounded-pill px-3 py-1 font-monospace"><i class="bi bi-lock-fill me-1"></i> Aptitude Locked</span>
+          {% endif %}
+        </div>
+
+        <h3 class="h4 font-extrabold text-main mb-2">
+          {% if is_eligible %}
+          You're eligible for the Aptitude Round!
+          {% else %}
+          Improve your resume before continuing
+          {% endif %}
+        </h3>
+
+        <p class="text-muted small mb-3">
+          {% if is_eligible %}
+          Congratulations! Your ATS match score meets the minimum 80% requirement to unlock the Aptitude Assessment.
+          {% else %}
+          An ATS score of at least 80% is required to unlock the Aptitude Round. Update your resume based on the AI suggestions above and re-analyze.
+          {% endif %}
+        </p>
+
+        <div class="d-flex flex-wrap gap-3 font-monospace small">
+          <span class="text-main fw-bold"><i class="bi bi-check2-circle text-success me-1"></i> Required Score: 80%</span>
+          <span class="fw-bold" style="color: {{ score_color }};"><i class="bi bi-speedometer2 me-1"></i> Your ATS Score: {{ score }}%</span>
+        </div>
+      </div>
+
+      <div class="flex-shrink-0">
+        {% if is_eligible %}
+        <a href="{{ url_for('aptitude') }}" class="btn btn-success btn-lg rounded-pill px-4 fw-bold shadow-sm d-inline-flex align-items-center gap-2">
+          <span>Start Aptitude Round</span> <i class="bi bi-arrow-right"></i>
+        </a>
+        {% else %}
+        <a href="{{ url_for('resume_analyzer') }}" class="btn btn-warning btn-lg rounded-pill px-4 fw-bold shadow-sm d-inline-flex align-items-center gap-2">
+          <i class="bi bi-arrow-repeat"></i> <span>Improve Resume</span>
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
+</main>
+{% endblock %}

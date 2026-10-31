@@ -1,0 +1,386 @@
+{% extends "base.html" %}
+
+{% block title %}Coding Round Setup — Interview.ai{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/coding.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid coding-setup-page py-3 fade-in">
+
+    <!-- 1. TOP HEADER BAR -->
+    <div class="coding-setup-top-bar">
+        <div class="d-flex align-items-center gap-2.5 flex-wrap">
+            <button type="button" class="setup-back-btn" id="btnBack" aria-label="Go back">
+                <i class="bi bi-arrow-left"></i>
+                <span>Back</span>
+            </button>
+            <span class="coding-setup-brand-pill">
+                <i class="bi bi-cpu-fill"></i> Interview.ai
+            </span>
+            <span class="text-muted d-none d-sm-inline" style="font-size: 0.85rem;">/</span>
+            <span class="fw-semibold text-main d-none d-sm-inline" style="font-size: 0.85rem;">Coding Round</span>
+        </div>
+
+        <div class="d-flex align-items-center gap-3">
+            <!-- Dynamic Network Status -->
+            <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5 rounded-pill font-monospace d-inline-flex align-items-center gap-1.5" id="networkPill">
+                <i class="bi bi-wifi" id="networkIcon"></i>
+                <span id="networkText">Online</span>
+            </span>
+
+            <!-- User profile area if present -->
+            {% if current_user.is_authenticated %}
+            <div class="d-none d-md-flex align-items-center gap-2 ps-2 border-start" style="border-color: var(--border-base) !important;">
+                <img src="{{ url_for('static', filename='uploads/profile/' + (current_user.profile.profile_image_filename if current_user.profile and current_user.profile.profile_image_filename else 'default.png')) }}"
+                     alt="{{ current_user.username }}"
+                     class="avatar-img"
+                     style="width:28px;height:28px;border-radius:50%;"
+                     data-initial="{{ current_user.username[:1] }}"
+                     onerror="handleAvatarError(this)">
+                <span class="fw-medium text-main text-truncate" style="font-size: 0.82rem; max-width: 130px;">
+                    {{ (current_user.profile.first_name if current_user.profile else None) or current_user.username }}
+                </span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 2. PAGE HERO -->
+    <div class="coding-setup-hero">
+        <div class="d-inline-flex align-items-center gap-1.5 mb-2">
+            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-20 px-3 py-1 font-monospace" style="font-size: 0.72rem; letter-spacing: 0.04em;">
+                <i class="bi bi-stars me-1"></i>AI-PERSONALIZED CODING ASSESSMENT
+            </span>
+        </div>
+        <h1>Ready for Your Coding Challenge?</h1>
+        <p class="hero-subtitle">Test your problem-solving skills with coding problems tailored to your role and interview difficulty.</p>
+    </div>
+
+    <!-- 9. NOTICE FOR MISSING OR PARTIAL INTERVIEW DETAILS -->
+    {% if no_domain %}
+    <div class="alert alert-warning border-0 d-flex align-items-center justify-content-between p-3.5 rounded-4 mb-4 shadow-xs" style="background: rgba(245, 158, 11, 0.1); border-left: 4px solid var(--color-warning, #f59e0b) !important;">
+        <div class="d-flex align-items-center gap-3">
+            <i class="bi bi-exclamation-triangle-fill text-warning fs-4 flex-shrink-0"></i>
+            <div>
+                <strong class="d-block text-main mb-0.5">Target Domain Selection Required</strong>
+                <span class="text-muted small">Please select your target domain on the Dashboard before starting your coding challenge.</span>
+            </div>
+        </div>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-warning rounded-pill px-3.5 py-2 font-monospace small fw-bold flex-shrink-0 shadow-sm">
+            <i class="bi bi-compass me-1"></i>Select Domain on Dashboard
+        </a>
+    </div>
+    {% elif journey and not journey.aptitude.completed %}
+    <div class="alert alert-warning border-0 d-flex align-items-center justify-content-between p-3.5 rounded-4 mb-4 shadow-xs" style="background: rgba(245, 158, 11, 0.1); border-left: 4px solid var(--color-warning, #f59e0b) !important;">
+        <div class="d-flex align-items-center gap-3">
+            <i class="bi bi-lock-fill text-warning fs-4 flex-shrink-0"></i>
+            <div>
+                <strong class="d-block text-main mb-0.5">Coding Round Locked</strong>
+                <span class="text-muted small">You must complete the Aptitude Round with a score of at least 80% to unlock the Coding Assessment.</span>
+            </div>
+        </div>
+        <a href="{{ url_for('interview_assessment') }}" class="btn btn-warning rounded-pill px-3.5 py-2 font-monospace small fw-bold flex-shrink-0 shadow-sm">
+            <i class="bi bi-award me-1"></i>Go to Aptitude Round
+        </a>
+    </div>
+    {% elif is_details_missing %}
+    <div class="alert alert-warning border-0 d-flex align-items-center gap-3 p-3 rounded-4 mb-4 shadow-xs" style="background: rgba(245, 158, 11, 0.08); border-left: 4px solid var(--color-warning, #f59e0b) !important;">
+        <i class="bi bi-exclamation-triangle-fill text-warning fs-4 flex-shrink-0"></i>
+        <div class="small">
+            <strong class="d-block text-main mb-0.5">Some interview details are unavailable.</strong>
+            <span class="text-muted">We'll use the available information to personalize your coding assessment.</span>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 3. ASSESSMENT SUMMARY CARD (NON-EDITABLE) -->
+    <div class="setup-summary-card">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+            <h2 class="setup-card-title mb-0">
+                <i class="bi bi-sliders text-primary"></i>
+                <span>Assessment Profile</span>
+            </h2>
+            <span class="badge bg-light text-muted border px-2.5 py-1 font-monospace small">
+                <i class="bi bi-lock-fill me-1"></i>Auto-Configured
+            </span>
+        </div>
+
+        <div class="summary-meta-grid">
+            <!-- Target Role -->
+            <div class="summary-meta-item">
+                <span class="meta-label">
+                    <span>Role</span>
+                    <i class="bi bi-briefcase text-muted"></i>
+                </span>
+                <span class="meta-value">{{ role }}</span>
+            </div>
+
+            <!-- Domain -->
+            <div class="summary-meta-item">
+                <span class="meta-label">
+                    <span>Domain</span>
+                    <i class="bi bi-diagram-3 text-muted"></i>
+                </span>
+                <span class="meta-value">{{ domain }}</span>
+            </div>
+
+            <!-- Difficulty -->
+            <div class="summary-meta-item">
+                <span class="meta-label">
+                    <span>Difficulty</span>
+                    <i class="bi bi-speedometer2 text-muted"></i>
+                </span>
+                <span class="meta-value">
+                    <span class="badge {% if difficulty|lower == 'easy' %}bg-success-subtle text-success{% elif difficulty|lower == 'hard' %}bg-danger-subtle text-danger{% else %}bg-warning-subtle text-warning{% endif %} font-monospace">
+                        {{ difficulty }}
+                    </span>
+                </span>
+            </div>
+
+            <!-- Number of Questions (Configurable: 3 / 5 / 8) -->
+            <div class="summary-meta-item">
+                <span class="meta-label">
+                    <span>Questions</span>
+                    <i class="bi bi-list-ol text-muted"></i>
+                </span>
+                <div class="d-flex align-items-center gap-1.5 mt-1" role="group" aria-label="Question Count">
+                    <button type="button" class="config-pill-btn {% if questions|string == '3' %}active{% endif %}" data-config="questions" data-value="3">3 Qs</button>
+                    <button type="button" class="config-pill-btn {% if questions|string == '5' or not questions or questions|string not in ['3','8'] %}active{% endif %}" data-config="questions" data-value="5">5 Qs</button>
+                    <button type="button" class="config-pill-btn {% if questions|string == '8' %}active{% endif %}" data-config="questions" data-value="8">8 Qs</button>
+                </div>
+            </div>
+
+            <!-- Duration (Configurable: 30 / 45 / 60 / 90 min) -->
+            <div class="summary-meta-item">
+                <span class="meta-label">
+                    <span>Duration</span>
+                    <i class="bi bi-clock-history text-muted"></i>
+                </span>
+                <div class="d-flex align-items-center gap-1 mt-1 flex-wrap" role="group" aria-label="Assessment Duration">
+                    <button type="button" class="config-pill-btn {% if '30' in duration|string %}active{% endif %}" data-config="duration" data-value="30 Minutes">30m</button>
+                    <button type="button" class="config-pill-btn {% if '45' in duration|string or not duration or ('30' not in duration|string and '60' not in duration|string and '90' not in duration|string) %}active{% endif %}" data-config="duration" data-value="45 Minutes">45m</button>
+                    <button type="button" class="config-pill-btn {% if '60' in duration|string %}active{% endif %}" data-config="duration" data-value="60 Minutes">60m</button>
+                    <button type="button" class="config-pill-btn {% if '90' in duration|string %}active{% endif %}" data-config="duration" data-value="90 Minutes">90m</button>
+                </div>
+            </div>
+        </div>
+
+        <p class="summary-explanation">
+            <i class="bi bi-info-circle text-primary"></i>
+            <span>Questions are generated based on your resume, job description, selected role, and interview difficulty.</span>
+        </p>
+    </div>
+
+    <!-- 4. WHAT TO EXPECT -->
+    <div class="mb-4">
+        <h2 class="h5 fw-bold text-main mb-3">
+            <i class="bi bi-compass text-primary me-2"></i>What to Expect
+        </h2>
+        <div class="expect-cards-grid">
+            <div class="expect-card">
+                <div class="expect-icon-wrapper blue">
+                    <i class="bi bi-puzzle-fill"></i>
+                </div>
+                <h3>Problem Solving</h3>
+                <p>Solve practical coding problems based on your target role.</p>
+            </div>
+
+            <div class="expect-card">
+                <div class="expect-icon-wrapper purple">
+                    <i class="bi bi-terminal-fill"></i>
+                </div>
+                <h3>Code Execution</h3>
+                <p>Run your solution against test cases before submitting.</p>
+            </div>
+
+            <div class="expect-card">
+                <div class="expect-icon-wrapper emerald">
+                    <i class="bi bi-cpu-fill"></i>
+                </div>
+                <h3>AI Evaluation</h3>
+                <p>Receive feedback on correctness, code quality, complexity, and approach.</p>
+            </div>
+
+            <div class="expect-card">
+                <div class="expect-icon-wrapper amber">
+                    <i class="bi bi-graph-up-arrow"></i>
+                </div>
+                <h3>Performance Report</h3>
+                <p>Understand your strengths and what to improve.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. CODING RULES & 6. LANGUAGE SELECTOR -->
+    <div class="setup-split-grid">
+        <!-- 5. Coding Rules -->
+        <div class="setup-panel">
+            <h2 class="h5 fw-bold text-main mb-3 d-flex align-items-center gap-2">
+                <i class="bi bi-shield-check text-primary"></i>
+                <span>Coding Rules</span>
+            </h2>
+            <ul class="rules-list">
+                <li>
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span>Read the complete problem before coding.</span>
+                </li>
+                <li>
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span>You can run your code against available test cases.</span>
+                </li>
+                <li>
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span>Your final submission will be evaluated.</span>
+                </li>
+                <li>
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span>Avoid hardcoded outputs.</span>
+                </li>
+                <li>
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span>Your solution should handle edge cases.</span>
+                </li>
+                <li>
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span>Stay within the assessment time.</span>
+                </li>
+                <li>
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span>Do not refresh the page during the assessment.</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- 6. Language Selector -->
+        <div class="setup-panel">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <h2 class="h5 fw-bold text-main mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-file-earmark-code text-primary"></i>
+                    <span>Programming Language</span>
+                </h2>
+                <span class="badge bg-primary-subtle text-primary font-monospace small px-2 py-0.5">
+                    Active: <span id="summaryLanguageText">Python</span>
+                </span>
+            </div>
+            <p class="text-muted small mb-3">Choose your preferred coding language for this assessment. Python is selected by default.</p>
+
+            <div class="language-selector-options">
+                <!-- Python (Selected by default) -->
+                <button type="button" class="language-option-btn active" data-language="Python">
+                    <div class="language-option-content">
+                        <i class="bi bi-filetype-py" style="color: #3776AB;"></i>
+                        <div>
+                            <strong>Python</strong>
+                            <small class="d-block text-muted" style="font-size: 0.72rem;">Default</small>
+                        </div>
+                    </div>
+                    <i class="bi bi-check-circle-fill check-indicator"></i>
+                </button>
+
+                <!-- JavaScript -->
+                <button type="button" class="language-option-btn" data-language="JavaScript">
+                    <div class="language-option-content">
+                        <i class="bi bi-filetype-js" style="color: #F7DF1E;"></i>
+                        <div>
+                            <strong>JavaScript</strong>
+                            <small class="d-block text-muted" style="font-size: 0.72rem;">ES6+ / Node</small>
+                        </div>
+                    </div>
+                    <i class="bi bi-check-circle-fill check-indicator"></i>
+                </button>
+
+                <!-- Java -->
+                <button type="button" class="language-option-btn" data-language="Java">
+                    <div class="language-option-content">
+                        <i class="bi bi-filetype-java" style="color: #007396;"></i>
+                        <div>
+                            <strong>Java</strong>
+                            <small class="d-block text-muted" style="font-size: 0.72rem;">JDK 17+</small>
+                        </div>
+                    </div>
+                    <i class="bi bi-check-circle-fill check-indicator"></i>
+                </button>
+
+                <!-- C++ -->
+                <button type="button" class="language-option-btn" data-language="C++">
+                    <div class="language-option-content">
+                        <i class="bi bi-code-slash" style="color: #00599C;"></i>
+                        <div>
+                            <strong>C++</strong>
+                            <small class="d-block text-muted" style="font-size: 0.72rem;">C++20</small>
+                        </div>
+                    </div>
+                    <i class="bi bi-check-circle-fill check-indicator"></i>
+                </button>
+
+                <!-- C -->
+                <button type="button" class="language-option-btn" data-language="C">
+                    <div class="language-option-content">
+                        <i class="bi bi-file-code" style="color: #64748B;"></i>
+                        <div>
+                            <strong>C</strong>
+                            <small class="d-block text-muted" style="font-size: 0.72rem;">C17 standard</small>
+                        </div>
+                    </div>
+                    <i class="bi bi-check-circle-fill check-indicator"></i>
+                </button>
+            </div>
+
+            <div class="p-2.5 rounded-3 bg-light border border-base small text-muted d-flex align-items-center gap-2">
+                <i class="bi bi-info-circle text-primary flex-shrink-0"></i>
+                <span style="font-size: 0.8rem;">Additional language runtimes will be unlocked during live code execution.</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. START BUTTON & SETUP SUBMISSION FORM -->
+    <form id="codingSetupForm" action="{{ url_for('coding_setup') }}" method="POST">
+        <!-- Hidden Context Payload -->
+        <input type="hidden" name="role" value="{{ role }}">
+        <input type="hidden" name="domain" value="{{ domain }}">
+        <input type="hidden" name="difficulty" value="{{ difficulty }}">
+        <input type="hidden" name="questions" id="selectedQuestionsInput" value="{{ questions if questions in ['3', '5', '8'] else '5' }}">
+        <input type="hidden" name="duration" id="selectedDurationInput" value="{{ duration if duration in ['30 Minutes', '45 Minutes', '60 Minutes', '90 Minutes'] else '45 Minutes' }}">
+        <input type="hidden" name="language" id="selectedLanguageInput" value="Python">
+
+        <div class="setup-action-card">
+            <div>
+                <strong class="d-block text-main mb-0.5">Everything is configured</strong>
+                <span class="text-muted small">Click to initialize your personalized coding challenge.</span>
+            </div>
+            <button type="submit" id="btnStartAssessment" class="btn-start-assessment" {% if no_domain or (journey and not journey.aptitude.completed) %}disabled title="{% if no_domain %}Please select a target domain on the Dashboard first.{% else %}Please complete the Aptitude assessment with an 80%+ score first.{% endif %}" style="opacity: 0.5; cursor: not-allowed;"{% endif %}>
+                <span>Start Coding Assessment</span>
+                <i class="bi bi-arrow-right"></i>
+            </button>
+        </div>
+    </form>
+
+    <!-- 8. EXIT CONFIRMATION MODAL -->
+    <div id="leaveModal" class="coding-leave-modal-backdrop d-none" role="dialog" aria-modal="true" aria-labelledby="leaveModalTitle">
+        <div class="coding-leave-modal-card">
+            <div class="mb-3">
+                <i class="bi bi-exclamation-circle-fill text-warning" style="font-size: 2.75rem;"></i>
+            </div>
+            <h3 class="fw-bold mb-2 text-main" id="leaveModalTitle" style="font-size: 1.35rem;">Leave Coding Round?</h3>
+            <p class="text-muted small mb-4" style="font-size: 0.9rem; line-height: 1.5;">
+                Your current setup will not be started. Are you sure you want to leave?
+            </p>
+            <div class="d-flex gap-2">
+                <button type="button" id="btnStay" class="btn btn-outline-secondary w-50 py-2.5 rounded-pill fw-semibold">
+                    Stay
+                </button>
+                <button type="button" id="btnGoBack" class="btn btn-danger w-50 py-2.5 rounded-pill fw-semibold">
+                    Go Back
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/coding_setup.js') }}"></script>
+{% endblock %}

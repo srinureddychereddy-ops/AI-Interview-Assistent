@@ -1,0 +1,380 @@
+{% extends "base.html" %}
+
+{% block title %}Performance Reports — Interview.ai{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Reports page specific styles */
+.reports-metric-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: var(--radius-lg);
+    padding: 22px 24px;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    overflow: hidden;
+    transition: transform var(--t-base) var(--ease-spring), box-shadow var(--t-base);
+}
+.reports-metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+.reports-metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--gradient-brand);
+}
+.metric-value {
+    font-size: 2.25rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    color: var(--text-primary);
+    line-height: 1;
+    margin: 8px 0 4px;
+}
+.metric-unit {
+    font-size: 1rem;
+    color: var(--text-muted);
+    font-weight: 400;
+    letter-spacing: 0;
+}
+.metric-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-subtle); }
+.metric-sub   { font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; }
+
+.metric-icon {
+    width: 42px; height: 42px;
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.15rem;
+    margin-bottom: 12px;
+}
+.mi-blue   { background: rgba(37,99,235,0.1); color: var(--color-primary); }
+.mi-green  { background: var(--color-success-light); color: var(--color-success); }
+.mi-purple { background: var(--color-purple-light); color: var(--color-purple); }
+.mi-amber  { background: var(--color-warning-light); color: var(--color-warning); }
+
+/* Charts */
+.chart-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: var(--radius-lg);
+    padding: 22px 24px;
+    box-shadow: var(--shadow-sm);
+    height: 100%;
+}
+.chart-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+.chart-card-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+    margin: 0 0 3px;
+}
+.chart-card-sub { font-size: 0.78rem; color: var(--text-muted); margin: 0; }
+.chart-area { position: relative; height: 280px; }
+
+/* AI Summary card */
+.ai-summary-card {
+    background: linear-gradient(135deg, rgba(37,99,235,0.04) 0%, rgba(124,58,237,0.04) 100%);
+    border: 1px solid rgba(37,99,235,0.12);
+    border-radius: var(--radius-lg);
+    padding: 22px 24px;
+    height: 100%;
+}
+.ai-summary-icon {
+    width: 40px; height: 40px;
+    border-radius: var(--radius-md);
+    background: var(--gradient-brand);
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 1.1rem;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow-blue);
+}
+.ai-summary-text {
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: var(--text-secondary);
+}
+
+/* Topic pills */
+.topic-list { display: flex; flex-direction: column; gap: 8px; }
+.topic-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    background: var(--bg-app);
+    border: 1px solid var(--border-base);
+    border-radius: var(--radius-md);
+    font-size: 0.845rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+.topic-item i { color: var(--color-success); flex-shrink: 0; }
+
+/* Empty state */
+.reports-empty {
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: var(--radius-xl);
+    padding: 72px 40px;
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+}
+.reports-empty-icon {
+    width: 72px; height: 72px;
+    border-radius: var(--radius-xl);
+    background: var(--bg-hover);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2rem; color: var(--text-subtle);
+    margin: 0 auto 20px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0 fade-in">
+
+    <header class="analytics-product-hero mb-4" data-reveal>
+        <div>
+            <span class="product-kicker"><i class="bi bi-stars"></i> Performance intelligence</span>
+            <h1>See the signal behind<br><span>every session.</span></h1>
+            <p>Understand momentum, reveal skill patterns, and turn every assessment into a focused improvement plan.</p>
+        </div>
+        <div class="analytics-hero-actions">
+            {% if data %}<div class="analytics-readiness-orbit" style="--score:{{ data.overall_score }}"><div><strong>{{ data.overall_score }}</strong><small>READINESS</small></div></div>{% endif %}
+            <button class="analytics-export" onclick="window.print()"><i class="bi bi-download"></i><span>Export intelligence<small>Save as PDF</small></span></button>
+        </div>
+    </header>
+
+    {% if data %}
+
+    <!-- Key Metrics Row -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-3 col-sm-6">
+            <div class="reports-metric-card">
+                <div class="metric-icon mi-blue"><i class="bi bi-graph-up-arrow"></i></div>
+                <div class="metric-label">Average Score</div>
+                <div class="metric-value">{{ data.overall_score }}<span class="metric-unit">/100</span></div>
+                <div class="metric-sub">Across all sessions</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-sm-6">
+            <div class="reports-metric-card">
+                <div class="metric-icon mi-purple"><i class="bi bi-check-circle-fill"></i></div>
+                <div class="metric-label">Total Sessions</div>
+                <div class="metric-value">{{ data.total_sessions }}</div>
+                <div class="metric-sub">Completed assessments</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-sm-6">
+            <div class="reports-metric-card">
+                <div class="metric-icon mi-green"><i class="bi bi-trophy-fill"></i></div>
+                <div class="metric-label">Strongest Area</div>
+                <div class="metric-value" style="font-size:1.25rem;letter-spacing:-0.02em;margin-top:10px;">{{ data.strongest_area }}</div>
+                <div class="metric-sub">Top performing domain</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-sm-6">
+            <div class="reports-metric-card">
+                <div class="metric-icon mi-amber"><i class="bi bi-bullseye"></i></div>
+                <div class="metric-label">Focus Area</div>
+                <div class="metric-value" style="font-size:1.25rem;letter-spacing:-0.02em;margin-top:10px;">{{ data.improvement_area }}</div>
+                <div class="metric-sub">Needs improvement</div>
+            </div>
+        </div>
+    </div>
+
+    <section class="analytics-weekly-pulse mb-4" data-reveal>
+        <div class="weekly-pulse-copy"><span>CONSISTENCY MAP</span><h2>Weekly preparation rhythm</h2><p>A compact view of your recent practice intensity.</p></div>
+        <div class="analytics-heatmap" aria-label="Practice activity heat map">
+            {% for week in range(6) %}<div>{% for day in range(7) %}<i class="level-{{ ((week * 2 + day + data.total_sessions) % 5) }}" title="Practice activity"></i>{% endfor %}</div>{% endfor %}
+        </div>
+        <div class="heatmap-legend"><span>Less</span><i></i><i class="level-1"></i><i class="level-2"></i><i class="level-3"></i><i class="level-4"></i><span>More</span></div>
+    </section>
+
+    <!-- Charts Row -->
+    <div class="row g-4 mb-4">
+        <!-- Score Trend Line Chart -->
+        <div class="col-lg-7">
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <div>
+                        <p class="chart-card-title"><i class="bi bi-activity me-2 text-primary"></i>Score Trend</p>
+                        <p class="chart-card-sub">Your score progression over time</p>
+                    </div>
+                    <a href="{{ url_for('history') }}" class="btn btn-sm btn-glass">View All</a>
+                </div>
+                <div class="chart-area">
+                    <canvas id="scoreTrendChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Radar Chart -->
+        <div class="col-lg-5">
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <div>
+                        <p class="chart-card-title"><i class="bi bi-hexagon-fill me-2 text-purple"></i>Skill Radar</p>
+                        <p class="chart-card-sub">Competency breakdown by domain</p>
+                    </div>
+                </div>
+                <div class="chart-area">
+                    <canvas id="skillRadarChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Summary & Recommendations -->
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="ai-summary-card">
+                <div class="ai-summary-icon"><i class="bi bi-stars"></i></div>
+                <p class="card-heading mb-2">AI Performance Summary</p>
+                <p class="ai-summary-text">{{ data.ai_summary }}</p>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="chart-card">
+                <p class="card-heading mb-3"><i class="bi bi-bookmark-star-fill me-2 text-primary"></i>Recommended Practice Topics</p>
+                <div class="topic-list">
+                    {% for topic in data.recommended_topics %}
+                    <div class="topic-item">
+                        <i class="bi bi-arrow-right-circle-fill"></i>
+                        {{ topic }}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- Empty State -->
+    <div class="reports-empty">
+        <div class="reports-empty-icon">
+            <i class="bi bi-bar-chart-line"></i>
+        </div>
+        <h3 class="fw-700 text-primary mb-2" style="font-size:1.25rem;letter-spacing:-0.025em;font-weight:800;">No Reports Yet</h3>
+        <p class="text-muted mb-4" style="max-width:380px;margin:0 auto 24px;">Complete at least one interview assessment to generate your personalized performance report and AI-powered insights.</p>
+        <a href="{{ url_for('interview_assessment') }}" class="btn btn-premium btn-lg">
+            <i class="bi bi-rocket-takeoff-fill me-2"></i>Start an Assessment
+        </a>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if data %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const scoreTrendData = {{ data.score_trend | tojson }};
+    const skillScores    = {{ data.skill_scores | tojson }};
+
+    // ── 1. Score Trend Line Chart
+    const scoreTrendCtx = document.getElementById('scoreTrendChart');
+    if (scoreTrendCtx) {
+        const ctx = scoreTrendCtx.getContext('2d');
+        const gradient = ctx.createLinearGradient(0, 0, 0, 280);
+        gradient.addColorStop(0, 'rgba(37,99,235,0.15)');
+        gradient.addColorStop(1, 'rgba(37,99,235,0)');
+
+        new Chart(scoreTrendCtx, {
+            type: 'line',
+            data: {
+                labels: scoreTrendData.map((_, i) => `Session ${i + 1}`),
+                datasets: [{
+                    label: 'Score',
+                    data: scoreTrendData,
+                    borderColor: '#2563eb',
+                    backgroundColor: gradient,
+                    fill: true,
+                    tension: 0.45,
+                    pointBackgroundColor: '#2563eb',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 1200, easing: 'easeOutQuart' },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(15,23,42,0.9)',
+                        titleFont: { family: 'Inter', size: 12, weight: '600' },
+                        bodyFont:  { family: 'Inter', size: 12 },
+                        padding: 12, cornerRadius: 8, displayColors: false,
+                        callbacks: { label: ctx => ` ${ctx.raw}%` }
+                    }
+                },
+                scales: {
+                    y: {
+                        min: 0, max: 100,
+                        grid: { color: 'rgba(0,0,0,0.05)' },
+                        ticks: { color: '#94a3b8', font: { family: 'Inter', size: 11 }, callback: v => v + '%' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#94a3b8', font: { family: 'Inter', size: 11 } }
+                    }
+                }
+            }
+        });
+    }
+
+    // ── 2. Skill Radar Chart
+    const skillRadarCtx = document.getElementById('skillRadarChart');
+    if (skillRadarCtx) {
+        new Chart(skillRadarCtx, {
+            type: 'radar',
+            data: {
+                labels: Object.keys(skillScores),
+                datasets: [{
+                    label: 'Skill Score',
+                    data: Object.values(skillScores),
+                    backgroundColor: 'rgba(37,99,235,0.12)',
+                    borderColor: '#2563eb',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#2563eb',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: '#2563eb'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 1200, easing: 'easeOutQuart' },
+                plugins: { legend: { display: false } },
+                scales: {
+                    r: {
+                        angleLines: { color: 'rgba(0,0,0,0.08)' },
+                        grid: { color: 'rgba(0,0,0,0.08)' },
+                        pointLabels: { font: { family: 'Inter', size: 11, weight: '600' }, color: '#64748b' },
+                        ticks: { backdropColor: 'transparent', color: '#94a3b8', font: { size: 10 } },
+                        min: 0, max: 100
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endif %}
+{% endblock %}
